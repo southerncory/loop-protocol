@@ -439,7 +439,7 @@ pub mod loop_vtp {
         
         plan.last_activity = now;
         
-        emit!(InheritanceHeartbeat {
+        emit!(InheritanceHeartbeatEvent {
             owner: plan.owner,
             timestamp: now,
         });
@@ -501,7 +501,11 @@ pub mod loop_vtp {
 // DATA TYPES
 // =========================================================================
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq)]
+// Max size for ReleaseCondition: 1 (discriminant) + 32 (pubkey) + 32 (hash) = 65 bytes max
+// But MultiSig with Vec is variable, so we cap at 5 signers = 1 + 1 + (5*32) = 162 bytes
+const RELEASE_CONDITION_MAX_SIZE: usize = 162;
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, InitSpace)]
 pub enum ReleaseCondition {
     /// Requires approval from specific arbiter
     ArbiterApproval { arbiter: Pubkey },
@@ -509,11 +513,11 @@ pub enum ReleaseCondition {
     TimeRelease { timestamp: i64 },
     /// Requires oracle attestation with specific data hash
     OracleAttestation { oracle: Pubkey, data_hash: [u8; 32] },
-    /// Requires threshold signatures
-    MultiSig { threshold: u8, signers: Vec<Pubkey> },
+    /// Requires threshold signatures (max 5 signers)
+    MultiSig { threshold: u8, #[max_len(5)] signers: Vec<Pubkey> },
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, InitSpace)]
 pub enum EscrowStatus {
     Active,
     Released,
@@ -521,10 +525,11 @@ pub enum EscrowStatus {
     Disputed,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, InitSpace)]
 pub struct Heir {
     pub address: Pubkey,
     pub percentage: u8, // 0-100
+    #[max_len(32)]
     pub name: String,   // Max 32 chars
 }
 
@@ -840,7 +845,7 @@ pub struct InheritanceSetup {
 }
 
 #[event]
-pub struct InheritanceHeartbeat {
+pub struct InheritanceHeartbeatEvent {
     pub owner: Pubkey,
     pub timestamp: i64,
 }

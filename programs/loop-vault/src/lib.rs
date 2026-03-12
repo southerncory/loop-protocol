@@ -216,14 +216,18 @@ pub mod loop_vault {
     ) -> Result<()> {
         require!(amount > 0, LoopError::InvalidAmount);
         
-        let vault = &mut ctx.accounts.vault;
-        require!(vault.cred_balance >= amount, LoopError::InsufficientBalance);
+        // Read values before mutable borrow
+        let cred_balance = ctx.accounts.vault.cred_balance;
+        let owner_key = ctx.accounts.vault.owner;
+        let vault_bump = ctx.accounts.vault.bump;
+        
+        require!(cred_balance >= amount, LoopError::InsufficientBalance);
         
         // Transfer Cred from vault to user
         let seeds = &[
             b"vault".as_ref(),
-            vault.owner.as_ref(),
-            &[vault.bump],
+            owner_key.as_ref(),
+            &[vault_bump],
         ];
         let signer = &[&seeds[..]];
         
@@ -239,7 +243,8 @@ pub mod loop_vault {
         );
         token::transfer(cpi_ctx, amount)?;
         
-        // Update vault
+        // Now mutable update
+        let vault = &mut ctx.accounts.vault;
         vault.cred_balance = vault.cred_balance.checked_sub(amount)
             .ok_or(LoopError::Underflow)?;
         vault.total_withdrawn = vault.total_withdrawn.checked_add(amount)
