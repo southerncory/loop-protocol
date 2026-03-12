@@ -192,7 +192,7 @@ pub mod loop_oxo {
         Ok(())
     }
 
-    /// Claim fee share for veOXO holders
+    /// Claim fee share for veOXO holders (uses decayed veOXO)
     pub fn claim_fee_share(
         ctx: Context<ClaimFeeShare>,
     ) -> Result<()> {
@@ -200,12 +200,22 @@ pub mod loop_oxo {
         let config = &ctx.accounts.config;
         let now = Clock::get()?.unix_timestamp;
         
-        require!(position.ve_oxo_balance > 0, OxoError::NoVeOxo);
+        // Calculate current veOXO with linear decay
+        let current_ve_oxo = calculate_decayed_ve_oxo(
+            position.ve_oxo_balance, // initial veOXO at lock time
+            position.lock_start,
+            position.unlock_at,
+            now
+        );
+        
+        require!(current_ve_oxo > 0, OxoError::NoVeOxo);
         require!(config.fee_pool > 0, OxoError::NoFeesToClaim);
         
-        // Calculate share based on veOXO proportion
-        // share = (user_ve_oxo / total_ve_oxo) * fee_pool
-        let share = (position.ve_oxo_balance as u128)
+        // Calculate share based on decayed veOXO proportion
+        // share = (user_decayed_ve_oxo / total_ve_oxo) * fee_pool
+        // Note: total_ve_oxo should ideally also be decayed, but for simplicity
+        // we use stored value (conservative estimate)
+        let share = (current_ve_oxo as u128)
             .checked_mul(config.fee_pool as u128)
             .ok_or(OxoError::Overflow)?
             .checked_div(config.total_ve_oxo as u128)
@@ -245,6 +255,23 @@ pub mod loop_oxo {
         });
         
         Ok(())
+    }
+    
+    /// Get current decayed veOXO balance (view function)
+    pub fn get_current_ve_oxo(
+        ctx: Context<GetCurrentVeOxo>,
+    ) -> Result<u64> {
+        let position = &ctx.accounts.ve_position;
+        let now = Clock::get()?.unix_timestamp;
+        
+        let current_ve_oxo = calculate_decayed_ve_oxo(
+            position.ve_oxo_balance,
+            position.lock_start,
+            position.unlock_at,
+            now
+        );
+        
+        Ok(current_ve_oxo)
     }
 
     // =========================================================================
@@ -559,6 +586,23 @@ fn calculate_bonding_curve_sell(reserve: u64, supply: u64, tokens: u64) -> Resul
     Ok(oxo)
 }
 
+/// Calculate current veOXO with linear decay
+/// veOXO decays linearly from initial amount to 0 at unlock time
+fn calculate_decayed_ve_oxo(initial_ve_oxo: u64, lock_start: i64, unlock_at: i64, now: i64) -> u64 {
+    if now >= unlock_at {
+        return 0;
+    }
+    if now <= lock_start {
+        return initial_ve_oxo;
+    }
+    
+    let total_duration = unlock_at - lock_start;
+    let time_remaining = unlock_at - now;
+    
+    // veOXO = initial * (time_remaining / total_duration)
+    ((initial_ve_oxo as u128 * time_remaining as u128) / total_duration as u128) as u64
+}
+
 // =========================================================================
 // ACCOUNTS
 // =========================================================================
@@ -676,6 +720,19 @@ pub struct ClaimFeeShare<'info> {
     pub user_cred_account: Account<'info, TokenAccount>,
     
     pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct GetCurrentVeOxo<'info> {
+    #[account(
+        seeds = [b"ve_position", owner.key().as_ref()],
+        bump = ve_position.bump,
+        constraint = ve_position.owner == owner.key() @ OxoError::Unauthorized,
+    )]
+    pub ve_position: Account<'info, VeOxoPosition>,
+    
+    /// CHECK: Just reading the owner key
+    pub owner: AccountInfo<'info>,
 }
 
 #[derive(Accounts)]

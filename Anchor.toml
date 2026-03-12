@@ -9,12 +9,14 @@ loop_vault = "76FgGQNTw9maaV82og6U33KMZw4FCw9yGJu4M75hJ3Z7"
 loop_cred = "FHVp7WrnUZq69aNZgYw2YNmitSdj8UCwoJ8C2A1M98JA"
 loop_oxo = "3qxTuF17rTdGFECPimRWu51uUycSwAL4ebd7w9s2xx4z"
 loop_vtp = "4D2PnJ4txLTQAqcoURt5eUQHMM85QsGPdGBHdsineuWj"
+loop_avp = "H5c9xfPYcx6EtC8hpThshARtUR7tq1NfMJVrTx8z9Jcx"
 
 [programs.devnet]
 loop_vault = "76FgGQNTw9maaV82og6U33KMZw4FCw9yGJu4M75hJ3Z7"
 loop_cred = "FHVp7WrnUZq69aNZgYw2YNmitSdj8UCwoJ8C2A1M98JA"
 loop_oxo = "3qxTuF17rTdGFECPimRWu51uUycSwAL4ebd7w9s2xx4z"
 loop_vtp = "4D2PnJ4txLTQAqcoURt5eUQHMM85QsGPdGBHdsineuWj"
+loop_avp = "H5c9xfPYcx6EtC8hpThshARtUR7tq1NfMJVrTx8z9Jcx"
 
 [registry]
 url = "https://api.apr.dev"

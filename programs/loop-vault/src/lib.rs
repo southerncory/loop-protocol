@@ -3,6 +3,9 @@ use anchor_spl::token::{self, Token, TokenAccount, Transfer, Mint};
 
 declare_id!("76FgGQNTw9maaV82og6U33KMZw4FCw9yGJu4M75hJ3Z7");
 
+// Constants
+pub const EXTRACTION_FEE_BPS: u16 = 500; // 5%
+
 /// Loop Vault Program
 /// 
 /// User-owned value storage with stacking (yield) capabilities.
@@ -284,6 +287,167 @@ pub mod loop_vault {
         
         Ok(())
     }
+
+    /// Claim yield from stacking position without unstacking
+    pub fn claim_yield(
+        ctx: Context<ClaimYield>,
+    ) -> Result<()> {
+        let stack = &ctx.accounts.stack;
+        let now = Clock::get()?.unix_timestamp;
+        
+        require!(stack.is_active, LoopError::StackInactive);
+        
+        // Calculate yield since last claim
+        let seconds_since_claim = (now - stack.start_time.max(ctx.accounts.vault.last_yield_claim)) as u64;
+        let yield_amount = calculate_yield(stack.amount, stack.apy_basis_points, seconds_since_claim);
+        
+        require!(yield_amount > 0, LoopError::NoYieldToClaim);
+        
+        // Update vault
+        let vault = &mut ctx.accounts.vault;
+        vault.cred_balance = vault.cred_balance.checked_add(yield_amount)
+            .ok_or(LoopError::Overflow)?;
+        vault.pending_yield = vault.pending_yield.saturating_sub(yield_amount);
+        vault.last_yield_claim = now;
+        
+        // Update stack
+        let stack = &mut ctx.accounts.stack;
+        stack.claimed_yield = stack.claimed_yield.checked_add(yield_amount)
+            .ok_or(LoopError::Overflow)?;
+        
+        emit!(YieldClaimed {
+            vault: vault.key(),
+            stack: stack.key(),
+            amount: yield_amount,
+            timestamp: now,
+        });
+        
+        Ok(())
+    }
+
+    /// Extract Cred to external value (exit from Loop)
+    /// 5% fee, resets vault Cred balance to zero, liquidates all stacking positions
+    pub fn extract(
+        ctx: Context<Extract>,
+    ) -> Result<()> {
+        let vault = &ctx.accounts.vault;
+        
+        // Calculate total extractable (liquid + stacked principal)
+        let liquid_balance = vault.cred_balance;
+        let stacked_balance = vault.stacked_balance;
+        let total = liquid_balance.checked_add(stacked_balance).ok_or(LoopError::Overflow)?;
+        
+        require!(total > 0, LoopError::NothingToExtract);
+        
+        // Calculate 5% fee
+        let fee = total.checked_mul(EXTRACTION_FEE_BPS as u64).ok_or(LoopError::Overflow)?
+            .checked_div(10000).ok_or(LoopError::DivisionByZero)?;
+        let amount_after_fee = total.checked_sub(fee).ok_or(LoopError::Underflow)?;
+        
+        // Read values for PDA signing
+        let owner_key = vault.owner;
+        let vault_bump = vault.bump;
+        
+        // Transfer to user (amount - fee)
+        let seeds = &[
+            b"vault".as_ref(),
+            owner_key.as_ref(),
+            &[vault_bump],
+        ];
+        let signer = &[&seeds[..]];
+        
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.vault_cred_account.to_account_info(),
+            to: ctx.accounts.user_cred_account.to_account_info(),
+            authority: ctx.accounts.vault.to_account_info(),
+        };
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            cpi_accounts,
+            signer,
+        );
+        token::transfer(cpi_ctx, amount_after_fee)?;
+        
+        // Transfer fee to protocol
+        if fee > 0 {
+            let cpi_accounts = Transfer {
+                from: ctx.accounts.vault_cred_account.to_account_info(),
+                to: ctx.accounts.fee_account.to_account_info(),
+                authority: ctx.accounts.vault.to_account_info(),
+            };
+            let cpi_ctx = CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                cpi_accounts,
+                signer,
+            );
+            token::transfer(cpi_ctx, fee)?;
+        }
+        
+        // Reset vault balances to zero
+        let vault = &mut ctx.accounts.vault;
+        vault.cred_balance = 0;
+        vault.stacked_balance = 0;
+        vault.pending_yield = 0;
+        vault.total_withdrawn = vault.total_withdrawn.checked_add(amount_after_fee)
+            .ok_or(LoopError::Overflow)?;
+        
+        emit!(Extracted {
+            vault: vault.key(),
+            total_amount: total,
+            fee,
+            amount_received: amount_after_fee,
+            timestamp: Clock::get()?.unix_timestamp,
+        });
+        
+        Ok(())
+    }
+
+    /// Close vault (after extraction, when empty)
+    pub fn close_vault(
+        ctx: Context<CloseVault>,
+    ) -> Result<()> {
+        let vault = &ctx.accounts.vault;
+        
+        // Verify vault is empty
+        require!(vault.cred_balance == 0, LoopError::VaultNotEmpty);
+        require!(vault.stacked_balance == 0, LoopError::VaultNotEmpty);
+        require!(vault.oxo_balance == 0, LoopError::VaultNotEmpty);
+        
+        emit!(VaultClosed {
+            vault: vault.key(),
+            owner: vault.owner,
+            timestamp: Clock::get()?.unix_timestamp,
+        });
+        
+        // Account will be closed and rent returned via close constraint
+        Ok(())
+    }
+
+    /// Set heir for inheritance
+    pub fn set_heir(
+        ctx: Context<SetHeir>,
+        heir: Pubkey,
+        inactivity_threshold_days: u16,
+    ) -> Result<()> {
+        require!(inactivity_threshold_days >= 30, LoopError::ThresholdTooShort);
+        
+        let inheritance = &mut ctx.accounts.inheritance_config;
+        inheritance.vault = ctx.accounts.vault.key();
+        inheritance.heir = heir;
+        inheritance.inactivity_threshold = (inactivity_threshold_days as i64) * 86400;
+        inheritance.last_activity = Clock::get()?.unix_timestamp;
+        inheritance.triggered = false;
+        inheritance.bump = ctx.bumps.inheritance_config;
+        
+        emit!(HeirDesignated {
+            vault: inheritance.vault,
+            heir,
+            inactivity_threshold_days,
+            timestamp: Clock::get()?.unix_timestamp,
+        });
+        
+        Ok(())
+    }
 }
 
 // ============================================================================
@@ -462,6 +626,85 @@ pub struct SetAgentPermission<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+pub struct ClaimYield<'info> {
+    #[account(
+        mut,
+        has_one = owner,
+    )]
+    pub vault: Account<'info, Vault>,
+    
+    #[account(
+        mut,
+        constraint = stack.vault == vault.key(),
+    )]
+    pub stack: Account<'info, StackRecord>,
+    
+    pub owner: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct Extract<'info> {
+    #[account(
+        mut,
+        seeds = [b"vault", owner.key().as_ref()],
+        bump = vault.bump,
+        has_one = owner,
+    )]
+    pub vault: Account<'info, Vault>,
+    
+    #[account(mut)]
+    pub vault_cred_account: Account<'info, TokenAccount>,
+    
+    #[account(mut)]
+    pub user_cred_account: Account<'info, TokenAccount>,
+    
+    #[account(mut)]
+    pub fee_account: Account<'info, TokenAccount>,
+    
+    pub owner: Signer<'info>,
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct CloseVault<'info> {
+    #[account(
+        mut,
+        seeds = [b"vault", owner.key().as_ref()],
+        bump = vault.bump,
+        has_one = owner,
+        close = owner,
+    )]
+    pub vault: Account<'info, Vault>,
+    
+    #[account(mut)]
+    pub owner: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct SetHeir<'info> {
+    #[account(
+        seeds = [b"vault", owner.key().as_ref()],
+        bump = vault.bump,
+        has_one = owner,
+    )]
+    pub vault: Account<'info, Vault>,
+    
+    #[account(
+        init,
+        payer = owner,
+        space = 8 + InheritanceConfig::INIT_SPACE,
+        seeds = [b"inheritance", vault.key().as_ref()],
+        bump,
+    )]
+    pub inheritance_config: Account<'info, InheritanceConfig>,
+    
+    #[account(mut)]
+    pub owner: Signer<'info>,
+    
+    pub system_program: Program<'info, System>,
+}
+
 // ============================================================================
 // STATE
 // ============================================================================
@@ -510,6 +753,17 @@ pub struct AgentPermission {
     pub daily_limit: u64,
     pub daily_used: u64,
     pub last_reset: i64,
+    pub bump: u8,
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct InheritanceConfig {
+    pub vault: Pubkey,
+    pub heir: Pubkey,
+    pub inactivity_threshold: i64,
+    pub last_activity: i64,
+    pub triggered: bool,
     pub bump: u8,
 }
 
@@ -595,6 +849,38 @@ pub struct AgentPermissionSet {
     pub daily_limit: u64,
 }
 
+#[event]
+pub struct YieldClaimed {
+    pub vault: Pubkey,
+    pub stack: Pubkey,
+    pub amount: u64,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct Extracted {
+    pub vault: Pubkey,
+    pub total_amount: u64,
+    pub fee: u64,
+    pub amount_received: u64,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct VaultClosed {
+    pub vault: Pubkey,
+    pub owner: Pubkey,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct HeirDesignated {
+    pub vault: Pubkey,
+    pub heir: Pubkey,
+    pub inactivity_threshold_days: u16,
+    pub timestamp: i64,
+}
+
 // ============================================================================
 // ERRORS
 // ============================================================================
@@ -609,14 +895,26 @@ pub enum LoopError {
     InvalidDuration,
     #[msg("Stack not active")]
     StackNotActive,
+    #[msg("Stack is inactive")]
+    StackInactive,
     #[msg("Arithmetic overflow")]
     Overflow,
     #[msg("Arithmetic underflow")]
     Underflow,
+    #[msg("Division by zero")]
+    DivisionByZero,
     #[msg("Source string too long (max 64 chars)")]
     SourceTooLong,
     #[msg("Unauthorized agent")]
     UnauthorizedAgent,
     #[msg("Daily limit exceeded")]
     DailyLimitExceeded,
+    #[msg("No yield to claim")]
+    NoYieldToClaim,
+    #[msg("Nothing to extract")]
+    NothingToExtract,
+    #[msg("Vault not empty")]
+    VaultNotEmpty,
+    #[msg("Inactivity threshold too short (min 30 days)")]
+    ThresholdTooShort,
 }
