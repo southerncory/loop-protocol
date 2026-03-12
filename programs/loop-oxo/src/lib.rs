@@ -304,15 +304,17 @@ pub mod loop_oxo {
         ctx: Context<BuyAgentToken>,
         oxo_amount: u64,
     ) -> Result<()> {
-        let curve = &mut ctx.accounts.bonding_curve;
+        // Read values first before mutable borrow
+        let graduated = ctx.accounts.bonding_curve.graduated;
+        let current_reserve = ctx.accounts.bonding_curve.oxo_reserve;
+        let agent_mint_key = ctx.accounts.bonding_curve.agent_mint;
+        let curve_bump = ctx.accounts.bonding_curve.bump;
         
-        require!(!curve.graduated, OxoError::AlreadyGraduated);
+        require!(!graduated, OxoError::AlreadyGraduated);
         require!(oxo_amount > 0, OxoError::InvalidAmount);
         
         // Calculate tokens to mint based on bonding curve
-        // Using simplified linear curve: tokens = sqrt(2 * k * oxo_amount + reserve^2) - reserve
-        // For MVP: linear approximation
-        let tokens_to_mint = calculate_bonding_curve_buy(curve.oxo_reserve, oxo_amount)?;
+        let tokens_to_mint = calculate_bonding_curve_buy(current_reserve, oxo_amount)?;
         
         // Transfer OXO to curve reserve
         let cpi_accounts = Transfer {
@@ -329,8 +331,8 @@ pub mod loop_oxo {
         // Mint agent tokens to buyer
         let seeds = &[
             b"bonding_curve".as_ref(),
-            curve.agent_mint.as_ref(),
-            &[curve.bump],
+            agent_mint_key.as_ref(),
+            &[curve_bump],
         ];
         let signer = &[&seeds[..]];
         
@@ -346,7 +348,8 @@ pub mod loop_oxo {
         );
         token::mint_to(cpi_ctx, tokens_to_mint)?;
         
-        // Update curve state
+        // Now do mutable update
+        let curve = &mut ctx.accounts.bonding_curve;
         curve.oxo_reserve = curve.oxo_reserve.checked_add(oxo_amount).ok_or(OxoError::Overflow)?;
         curve.token_supply = curve.token_supply.checked_add(tokens_to_mint).ok_or(OxoError::Overflow)?;
         
@@ -375,14 +378,19 @@ pub mod loop_oxo {
         ctx: Context<SellAgentToken>,
         token_amount: u64,
     ) -> Result<()> {
-        let curve = &mut ctx.accounts.bonding_curve;
+        // Read values first before mutable borrow
+        let graduated = ctx.accounts.bonding_curve.graduated;
+        let current_reserve = ctx.accounts.bonding_curve.oxo_reserve;
+        let current_supply = ctx.accounts.bonding_curve.token_supply;
+        let agent_mint_key = ctx.accounts.bonding_curve.agent_mint;
+        let curve_bump = ctx.accounts.bonding_curve.bump;
         
-        require!(!curve.graduated, OxoError::AlreadyGraduated);
+        require!(!graduated, OxoError::AlreadyGraduated);
         require!(token_amount > 0, OxoError::InvalidAmount);
-        require!(curve.token_supply >= token_amount, OxoError::InsufficientSupply);
+        require!(current_supply >= token_amount, OxoError::InsufficientSupply);
         
         // Calculate OXO to return
-        let oxo_to_return = calculate_bonding_curve_sell(curve.oxo_reserve, curve.token_supply, token_amount)?;
+        let oxo_to_return = calculate_bonding_curve_sell(current_reserve, current_supply, token_amount)?;
         
         // 1% sell fee (to prevent arbitrage)
         let fee = oxo_to_return / 100;
@@ -403,8 +411,8 @@ pub mod loop_oxo {
         // Transfer OXO back to seller
         let seeds = &[
             b"bonding_curve".as_ref(),
-            curve.agent_mint.as_ref(),
-            &[curve.bump],
+            agent_mint_key.as_ref(),
+            &[curve_bump],
         ];
         let signer = &[&seeds[..]];
         
@@ -420,7 +428,8 @@ pub mod loop_oxo {
         );
         token::transfer(cpi_ctx, oxo_after_fee)?;
         
-        // Update curve state
+        // Now do mutable update
+        let curve = &mut ctx.accounts.bonding_curve;
         curve.oxo_reserve = curve.oxo_reserve.saturating_sub(oxo_to_return);
         curve.token_supply = curve.token_supply.saturating_sub(token_amount);
         
