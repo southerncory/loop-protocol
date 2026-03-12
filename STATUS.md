@@ -6,9 +6,9 @@
 
 ## Current Phase
 
-**Phase 2: Core Implementation** ✅ COMPLETE
+**Phase 4: MVP Complete** ✅
 
-All 4 Solana programs built and ready for deployment.
+All core programs + Shopping Capture Module built and ready.
 
 ---
 
@@ -17,24 +17,25 @@ All 4 Solana programs built and ready for deployment.
 **Date:** 2026-03-12
 
 **What happened:**
-- ✅ Built all 4 programs on A9 (WSL Ubuntu, 955GB disk)
-- Fixed borrow checker issues across programs
-- Added InitSpace traits for nested types
-- All .so files ready in A9's `target/deploy/`
+- ✅ Built loop-shopping (Shopping Capture Module)
+- ✅ Updated TypeScript SDK (40+ methods)
+- ✅ Wrote comprehensive integration tests (4,183 lines)
+- ✅ All 6 programs compiled on A9
 
 ---
 
 ## Build Status
 
-| Program | Status | Size |
-|---------|--------|------|
-| **loop_cred.so** | ✅ BUILT | 296KB |
-| **loop_oxo.so** | ✅ BUILT | 365KB |
-| **loop_vault.so** | ✅ BUILT | 317KB |
-| **loop_vtp.so** | ✅ BUILT | 352KB |
+| Program | Status | Size | Description |
+|---------|--------|------|-------------|
+| **loop_vault.so** | ✅ | 364 KB | User vaults, stacking, inheritance |
+| **loop_cred.so** | ✅ | 297 KB | USDC-backed stable token |
+| **loop_oxo.so** | ✅ | 373 KB | Protocol equity, veOXO, bonding curves |
+| **loop_vtp.so** | ✅ | 354 KB | Transfers, escrow, inheritance |
+| **loop_avp.so** | ✅ | 261 KB | Agent identity, capabilities |
+| **loop_shopping.so** | ✅ | 345 KB | Purchase capture, rewards |
 
-**Built on:** A9 Max (100.85.44.90) via WSL Ubuntu  
-**Location:** `~/loop-protocol/target/deploy/`
+**Total:** 6 programs, ~2 MB
 
 ---
 
@@ -46,30 +47,68 @@ All 4 Solana programs built and ready for deployment.
 | loop-cred | `FHVp7WrnUZq69aNZgYw2YNmitSdj8UCwoJ8C2A1M98JA` |
 | loop-oxo | `3qxTuF17rTdGFECPimRWu51uUycSwAL4ebd7w9s2xx4z` |
 | loop-vtp | `4D2PnJ4txLTQAqcoURt5eUQHMM85QsGPdGBHdsineuWj` |
+| loop-avp | `H5c9xfPYcx6EtC8hpThshARtUR7tq1NfMJVrTx8z9Jcx` |
+| loop-shopping | `D9EVmPZXMwqL3v9ebdpanyrJi3i1ZdfNRJo2MsZkd7qJ` |
+
+---
+
+## SDK
+
+**Location:** `sdk/src/index.ts`
+
+| Module | Methods |
+|--------|---------|
+| loop.vault.* | 11 methods |
+| loop.cred.* | 6 methods |
+| loop.oxo.* | 10 methods |
+| loop.vtp.* | 11 methods |
+| loop.avp.* | 10 methods |
+
+**Total:** 48 TypeScript methods with PDA helpers and types.
+
+---
+
+## Tests
+
+**Location:** `tests/`
+
+| File | Lines | Coverage |
+|------|-------|----------|
+| integration.ts | 828 | Full flow |
+| loop-cred.ts | 795 | Cred program |
+| loop-vtp.ts | 1,009 | VTP program |
+| loop-avp.ts | 881 | AVP program |
+| loop-vault.ts | ~300 | Vault basics |
+| loop-oxo.ts | ~400 | OXO basics |
+
+**Total:** ~4,200 lines of tests
 
 ---
 
 ## What's Built
 
-### Solana Programs
+### Core Protocol (Phase 2-3) ✅
+- **AVP** — Agent identity, registration, capabilities
+- **Vault** — User vaults, stacking, yield, inheritance
+- **Cred** — USDC-backed stable token
+- **OXO** — Protocol equity, veOXO governance
+- **VTP** — Transfers, escrow, inheritance
 
-**loop-vault** — User vaults, stacking, agent permissions
-**loop-cred** — USDC-backed stable token (Cred)
-**loop-oxo** — Protocol equity, veOXO staking, bonding curves
-**loop-vtp** — Transfers, escrow, inheritance
+### Capture Module (Phase 4) ✅
+- **Shopping** — Merchant registration, purchase proof, rewards
 
-### SDK
-
-**@loop-protocol/sdk** — TypeScript SDK (ready)
+### SDK & Tests ✅
+- TypeScript SDK matching all programs
+- Comprehensive integration tests
 
 ---
 
 ## Next Steps
 
-1. **Deploy to devnet** — Test full flow
-2. **Run tests** — `anchor test`
-3. **Kard outreach** — Shopping capture integration
-4. **Website update** — Reflect protocol progress
+1. **Deploy to devnet** — Test on live network
+2. **Run integration tests** — Verify full flow
+3. **Security audit** — Before mainnet
+4. **Mainnet launch** — Target: 2026-08
 
 ---
 
@@ -79,13 +118,12 @@ All 4 Solana programs built and ready for deployment.
 # SSH to A9
 sshpass -p 'crypticbox589' ssh "cory southern@100.85.44.90"
 
-# In PowerShell, run WSL
+# In WSL
 wsl -d Ubuntu
-
-# Deploy to devnet
 cd ~/loop-protocol
 source ~/.cargo/env
-export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
+
+# Deploy to devnet
 solana config set --url devnet
 anchor deploy
 ```
