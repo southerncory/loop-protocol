@@ -1,0 +1,47 @@
+{
+  "name": "@loop-protocol/sdk",
+  "version": "0.1.0",
+  "description": "Loop Protocol SDK - Value capture infrastructure for AI agents",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "test": "vitest",
+    "lint": "eslint src/",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "loop",
+    "protocol",
+    "value-capture",
+    "ai-agents",
+    "solana",
+    "web3"
+  ],
+  "author": "Loop Protocol",
+  "license": "MIT",
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.30.0",
+    "@solana/web3.js": "^1.91.0",
+    "@solana/spl-token": "^0.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/southerncory/loop-protocol.git"
+  }
+}
