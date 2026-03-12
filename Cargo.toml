@@ -5,6 +5,7 @@ members = [
     "programs/loop-oxo",
     "programs/loop-vtp",
     "programs/loop-avp",
+    "programs/loop-shopping",
 ]
 resolver = "2"
 
