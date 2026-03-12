@@ -1,12 +1,12 @@
 [package]
-name = "loop-cred"
+name = "loop-vtp"
 version = "0.1.0"
-description = "Loop Cred - Stable value token backed by USDC"
+description = "Loop VTP - Value Transfer Protocol with escrow and inheritance"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "loop_cred"
+name = "loop_vtp"
 
 [features]
 default = []

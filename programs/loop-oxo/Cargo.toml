@@ -1,12 +1,12 @@
 [package]
-name = "loop-cred"
+name = "loop-oxo"
 version = "0.1.0"
-description = "Loop Cred - Stable value token backed by USDC"
+description = "Loop OXO - Protocol equity token with veOXO staking and bonding curves"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "loop_cred"
+name = "loop_oxo"
 
 [features]
 default = []
