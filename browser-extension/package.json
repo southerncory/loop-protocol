@@ -1,0 +1,27 @@
+{
+  "name": "@loop-protocol/browser-extension",
+  "version": "0.1.0",
+  "description": "Loop Capture browser extension - earn from referrals and attention",
+  "scripts": {
+    "build": "npm run build:content && npm run build:background && npm run build:popup",
+    "build:content": "esbuild src/content.ts --bundle --outfile=dist/content.js --format=iife --target=chrome100",
+    "build:background": "esbuild src/background.ts --bundle --outfile=dist/background.js --format=esm --target=chrome100 --external:@solana/web3.js",
+    "build:popup": "esbuild src/popup.ts --bundle --outfile=dist/popup.js --format=iife --target=chrome100",
+    "watch": "npm run build && concurrently \"npm run watch:content\" \"npm run watch:background\" \"npm run watch:popup\"",
+    "watch:content": "esbuild src/content.ts --bundle --outfile=dist/content.js --format=iife --target=chrome100 --watch",
+    "watch:background": "esbuild src/background.ts --bundle --outfile=dist/background.js --format=esm --target=chrome100 --watch",
+    "watch:popup": "esbuild src/popup.ts --bundle --outfile=dist/popup.js --format=iife --target=chrome100 --watch",
+    "clean": "rm -rf dist",
+    "package": "npm run build && zip -r loop-capture-extension.zip manifest.json popup.html dist icons"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.260",
+    "@types/node": "^20.0.0",
+    "concurrently": "^8.2.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.91.0"
+  }
+}

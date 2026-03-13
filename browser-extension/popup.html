@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loop Capture</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 360px;
+      min-height: 400px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+    }
+    
+    .header {
+      padding: 20px;
+      background: linear-gradient(135deg, #1a3a2a 0%, #0a1a10 100%);
+      border-bottom: 1px solid #1f3d2a;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: #10b981;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    
+    .logo-text {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #9ca3af;
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+    
+    .status-dot.inactive {
+      background: #ef4444;
+    }
+    
+    .earnings-card {
+      margin: 20px;
+      padding: 20px;
+      background: #111;
+      border-radius: 16px;
+      border: 1px solid #222;
+    }
+    
+    .earnings-label {
+      font-size: 12px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    
+    .earnings-value {
+      font-size: 36px;
+      font-weight: 700;
+      color: #10b981;
+    }
+    
+    .earnings-value span {
+      font-size: 18px;
+      color: #6b7280;
+    }
+    
+    .earnings-sub {
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 0 20px 20px;
+    }
+    
+    .stat-box {
+      padding: 16px;
+      background: #111;
+      border-radius: 12px;
+      border: 1px solid #222;
+    }
+    
+    .stat-value {
+      font-size: 24px;
+      font-weight: 600;
+      color: #fff;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    
+    .section {
+      margin: 0 20px 20px;
+    }
+    
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #9ca3af;
+      margin-bottom: 12px;
+    }
+    
+    .domain-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .domain-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: #111;
+      border-radius: 8px;
+      border: 1px solid #222;
+    }
+    
+    .domain-name {
+      font-size: 14px;
+      color: #fff;
+    }
+    
+    .domain-count {
+      font-size: 14px;
+      color: #10b981;
+    }
+    
+    .wallet-section {
+      margin: 0 20px 20px;
+      padding: 16px;
+      background: #111;
+      border-radius: 12px;
+      border: 1px solid #222;
+    }
+    
+    .wallet-connected {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .wallet-address {
+      font-size: 14px;
+      color: #10b981;
+      font-family: monospace;
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: #10b981;
+      color: #000;
+    }
+    
+    .btn-primary:hover {
+      background: #059669;
+    }
+    
+    .btn-secondary {
+      background: #222;
+      color: #fff;
+      border: 1px solid #333;
+    }
+    
+    .btn-secondary:hover {
+      background: #333;
+    }
+    
+    .footer {
+      padding: 16px 20px;
+      border-top: 1px solid #222;
+      text-align: center;
+    }
+    
+    .footer a {
+      color: #6b7280;
+      text-decoration: none;
+      font-size: 12px;
+    }
+    
+    .footer a:hover {
+      color: #10b981;
+    }
+    
+    .toggle-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: #111;
+      border-radius: 12px;
+      border: 1px solid #222;
+      margin: 0 20px 20px;
+    }
+    
+    .toggle-label {
+      font-size: 14px;
+      color: #fff;
+    }
+    
+    .toggle {
+      position: relative;
+      width: 48px;
+      height: 24px;
+      background: #333;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .toggle.active {
+      background: #10b981;
+    }
+    
+    .toggle-knob {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    
+    .toggle.active .toggle-knob {
+      transform: translateX(24px);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">∞</div>
+      <div class="logo-text">Loop Capture</div>
+    </div>
+    <div class="status">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Capturing...</span>
+    </div>
+  </div>
+  
+  <div class="earnings-card">
+    <div class="earnings-label">Estimated Pending Earnings</div>
+    <div class="earnings-value">$<span id="earnings">0.00</span></div>
+    <div class="earnings-sub" id="earningsSub">Connect wallet to claim</div>
+  </div>
+  
+  <div class="stats-grid">
+    <div class="stat-box">
+      <div class="stat-value" id="linksCount">0</div>
+      <div class="stat-label">Links Captured</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value" id="domainsCount">0</div>
+      <div class="stat-label">Sites Active</div>
+    </div>
+  </div>
+  
+  <div class="toggle-container">
+    <span class="toggle-label">Capture Active</span>
+    <div class="toggle active" id="captureToggle">
+      <div class="toggle-knob"></div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <div class="section-title">Top Sites</div>
+    <div class="domain-list" id="domainList">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+  
+  <div class="wallet-section">
+    <div id="walletContent">
+      <button class="btn btn-primary" id="connectBtn">Connect Wallet</button>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <a href="https://looplocal.io" target="_blank">looplocal.io</a>
+  </div>
+  
+  <script src="dist/popup.js"></script>
+</body>
+</html>
