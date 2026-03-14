@@ -10,11 +10,10 @@ import { PublicKey } from '@solana/web3.js';
 // ============================================================================
 
 export const PROGRAM_IDS = {
-  // Deployed ✅
+  // All deployed to devnet ✅ (March 14, 2026)
   VAULT: new PublicKey('59TcVKRtME1mzGUL4xfpjMfhstGqoCEoZTTySpAeuZXZ'),
   CRED: new PublicKey('4THszk4dzFAkrcRXB2bXhrLunc74qmc6AUbzRGsGVETH'),
   OXO: new PublicKey('AidgmTgrbV7UMTLzyDM1MhQLzkrGZMFGTdgHVd3dVC7R'),
-  // Pending deployment (addresses from Anchor.toml keypairs)
   VTP: new PublicKey('3mP7L31af6MV6FnqWG6E78JELNuizWDwBK3rC3g3WjSK'),
   AVP: new PublicKey('FE3ZJBqVcqP6ar2pnndMghgNb3pi4mrjhVoAS7x4BVCA'),
   SHOPPING: new PublicKey('FSqRkH7nkGHP3VpHwFE667PVAfLKfSGaPMgTrXpJZJoJ'),
