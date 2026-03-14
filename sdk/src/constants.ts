@@ -6,15 +6,18 @@
 import { PublicKey } from '@solana/web3.js';
 
 // ============================================================================
-// PROGRAM IDS
+// PROGRAM IDS (Devnet - March 2026)
 // ============================================================================
 
 export const PROGRAM_IDS = {
-  VAULT: new PublicKey('76FgGQNTw9maaV82og6U33KMZw4FCw9yGJu4M75hJ3Z7'),
-  CRED: new PublicKey('FHVp7WrnUZq69aNZgYw2YNmitSdj8UCwoJ8C2A1M98JA'),
-  OXO: new PublicKey('3qxTuF17rTdGFECPimRWu51uUycSwAL4ebd7w9s2xx4z'),
-  VTP: new PublicKey('4D2PnJ4txLTQAqcoURt5eUQHMM85QsGPdGBHdsineuWj'),
-  AVP: new PublicKey('H5c9xfPYcx6EtC8hpThshARtUR7tq1NfMJVrTx8z9Jcx'),
+  // Deployed ✅
+  VAULT: new PublicKey('59TcVKRtME1mzGUL4xfpjMfhstGqoCEoZTTySpAeuZXZ'),
+  CRED: new PublicKey('4THszk4dzFAkrcRXB2bXhrLunc74qmc6AUbzRGsGVETH'),
+  OXO: new PublicKey('AidgmTgrbV7UMTLzyDM1MhQLzkrGZMFGTdgHVd3dVC7R'),
+  // Pending deployment (addresses from Anchor.toml keypairs)
+  VTP: new PublicKey('3mP7L31af6MV6FnqWG6E78JELNuizWDwBK3rC3g3WjSK'),
+  AVP: new PublicKey('FE3ZJBqVcqP6ar2pnndMghgNb3pi4mrjhVoAS7x4BVCA'),
+  SHOPPING: new PublicKey('FSqRkH7nkGHP3VpHwFE667PVAfLKfSGaPMgTrXpJZJoJ'),
 } as const;
 
 // ============================================================================
