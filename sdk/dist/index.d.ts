@@ -3,6 +3,463 @@ import * as anchor from '@coral-xyz/anchor';
 import { BN } from '@coral-xyz/anchor';
 
 /**
+ * Para Module - Passkey authentication and session keys
+ * Placeholder for Para SDK integration
+ */
+declare class ParaModule {
+    private loop;
+    constructor(loop: any);
+    /** Check if Para is available */
+    isAvailable(): boolean;
+    /** Create passkey for user */
+    createPasskey(_userId: string): Promise<void>;
+    /** Authenticate with passkey */
+    authenticate(_challenge: Uint8Array): Promise<Uint8Array>;
+    /** Create session key with limited permissions */
+    createSessionKey(_permissions: string[], _expirySeconds: number): Promise<void>;
+}
+
+/**
+ * Squads Module - Smart account policies with Squads Protocol
+ * Placeholder for Squads SDK integration
+ */
+declare class SquadsModule {
+    private loop;
+    constructor(loop: any);
+    /** Check if Squads is available */
+    isAvailable(): boolean;
+    /** Create multisig with members */
+    createMultisig(_members: string[], _threshold: number): Promise<void>;
+    /** Propose transaction */
+    proposeTransaction(_multisig: string, _instructions: any[]): Promise<void>;
+    /** Approve transaction */
+    approveTransaction(_multisig: string, _transactionId: number): Promise<void>;
+    /** Execute approved transaction */
+    executeTransaction(_multisig: string, _transactionId: number): Promise<void>;
+}
+
+/**
+ * Reclaim Module - Zero-knowledge proof verification
+ * Placeholder for Reclaim Protocol integration
+ */
+declare class ReclaimModule {
+    private loop;
+    constructor(loop: any);
+    /** Check if Reclaim is available */
+    isAvailable(): boolean;
+    /** Generate proof request for specific data */
+    generateProofRequest(_providerId: string, _claims: string[]): Promise<string>;
+    /** Verify zero-knowledge proof */
+    verifyProof(_proof: string): Promise<boolean>;
+    /** Get supported providers */
+    getSupportedProviders(): string[];
+}
+
+/**
+ * TEE Module - Trusted Execution Environment integration
+ * Placeholder for TEE attestation and secure computation
+ */
+declare class TeeModule {
+    private loop;
+    constructor(loop: any);
+    /** Check if TEE is available */
+    isAvailable(): boolean;
+    /** Get TEE attestation quote */
+    getAttestation(): Promise<Uint8Array>;
+    /** Verify TEE attestation */
+    verifyAttestation(_quote: Uint8Array): Promise<boolean>;
+    /** Execute in secure enclave */
+    secureExecute(_code: Uint8Array, _input: Uint8Array): Promise<Uint8Array>;
+    /** Get enclave measurement */
+    getMeasurement(): Promise<string>;
+}
+
+/**
+ * Loop Protocol SDK - Custom Error Classes
+ *
+ * Provides typed, descriptive errors for all SDK operations
+ */
+/**
+ * Base error class for all Loop Protocol errors
+ */
+declare class LoopError extends Error {
+    readonly code: string;
+    constructor(message: string, code: string);
+}
+/**
+ * Thrown when a blockchain transaction fails to execute
+ */
+declare class TransactionFailedError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when a transaction exceeds the timeout period
+ */
+declare class TransactionTimeoutError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when the wallet has insufficient funds for an operation
+ */
+declare class InsufficientFundsError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when attempting to access a vault that does not exist
+ */
+declare class VaultNotFoundError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when attempting to create a vault that already exists
+ */
+declare class VaultAlreadyExistsError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when vault balance is insufficient for the requested operation
+ */
+declare class InsufficientBalanceError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when a stacking position cannot be found
+ */
+declare class StackingPositionNotFoundError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when attempting to unstake before the maturity period
+ */
+declare class StackingNotMatureError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when a capture operation fails
+ */
+declare class CaptureFailedError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when proof verification fails
+ */
+declare class ProofVerificationFailedError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when an invalid capture type is provided
+ */
+declare class InvalidCaptureTypeError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when a session has expired and needs refresh
+ */
+declare class SessionExpiredError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when an operation is attempted without proper authorization
+ */
+declare class UnauthorizedError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when an operation violates security policies
+ */
+declare class PolicyViolationError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when an agent cannot be found
+ */
+declare class AgentNotFoundError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when an agent lacks authorization for an operation
+ */
+declare class AgentNotAuthorizedError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when an invalid public key is provided
+ */
+declare class InvalidPublicKeyError extends LoopError {
+    constructor(message?: string);
+}
+/**
+ * Thrown when an invalid amount is provided
+ */
+declare class InvalidAmountError extends LoopError {
+    constructor(message?: string);
+}
+
+/**
+ * Retry utilities with exponential backoff
+ */
+interface RetryConfig {
+    /** Maximum number of retry attempts */
+    maxRetries: number;
+    /** Initial delay between retries in milliseconds */
+    baseDelayMs: number;
+    /** Maximum delay between retries in milliseconds */
+    maxDelayMs: number;
+    /** Optional jitter factor (0-1) to add randomness to delays */
+    jitterFactor?: number;
+}
+/**
+ * Sleep for a specified number of milliseconds
+ */
+declare function sleep(ms: number): Promise<void>;
+/**
+ * Execute a function with automatic retry on transient failures
+ *
+ * @param fn - The async function to execute
+ * @param config - Optional retry configuration
+ * @returns The result of the function
+ * @throws The last error if all retries are exhausted
+ *
+ * @example
+ * ```typescript
+ * const result = await withRetry(
+ *   () => connection.getBalance(pubkey),
+ *   { maxRetries: 5, baseDelayMs: 500 }
+ * );
+ * ```
+ */
+declare function withRetry<T>(fn: () => Promise<T>, config?: Partial<RetryConfig>): Promise<T>;
+/**
+ * Execute a function with retry, returning a result object instead of throwing
+ *
+ * @param fn - The async function to execute
+ * @param config - Optional retry configuration
+ * @returns Object with success flag and either result or error
+ */
+declare function tryWithRetry<T>(fn: () => Promise<T>, config?: Partial<RetryConfig>): Promise<{
+    success: true;
+    result: T;
+} | {
+    success: false;
+    error: unknown;
+}>;
+
+/**
+ * Validation utilities for Loop Protocol SDK
+ */
+
+/**
+ * Error thrown when validation fails
+ */
+declare class ValidationError extends Error {
+    constructor(message: string);
+}
+/**
+ * Validate and convert a public key input to PublicKey
+ *
+ * @param key - A string or PublicKey
+ * @returns PublicKey instance
+ * @throws ValidationError if the key is invalid
+ *
+ * @example
+ * ```typescript
+ * const pubkey = validatePublicKey('7xKX...3nP9');
+ * const same = validatePublicKey(existingPubkey);
+ * ```
+ */
+declare function validatePublicKey(key: string | PublicKey): PublicKey;
+/**
+ * Validate and convert an amount to BN
+ *
+ * @param amount - A number or BN
+ * @returns BN instance
+ * @throws ValidationError if the amount is invalid
+ *
+ * @example
+ * ```typescript
+ * const amount = validateAmount(1000000);
+ * const bnAmount = validateAmount(new BN('1000000'));
+ * ```
+ */
+declare function validateAmount(amount: number | BN): BN;
+/**
+ * Validate and convert a positive amount to BN
+ *
+ * @param amount - A number or BN, must be > 0
+ * @returns BN instance
+ * @throws ValidationError if the amount is invalid or not positive
+ *
+ * @example
+ * ```typescript
+ * const amount = validatePositiveAmount(1000000);
+ * ```
+ */
+declare function validatePositiveAmount(amount: number | BN): BN;
+/**
+ * Validate a non-negative amount (zero is allowed)
+ *
+ * @param amount - A number or BN, must be >= 0
+ * @returns BN instance
+ * @throws ValidationError if the amount is invalid or negative
+ */
+declare function validateNonNegativeAmount(amount: number | BN): BN;
+/**
+ * Validate a percentage in basis points (0-10000)
+ *
+ * @param bps - Basis points (100 bps = 1%)
+ * @returns The validated bps value
+ * @throws ValidationError if bps is invalid
+ *
+ * @example
+ * ```typescript
+ * const fee = validatePercentage(500); // 5%
+ * ```
+ */
+declare function validatePercentage(bps: number): number;
+/**
+ * Validate a lock duration in seconds
+ *
+ * @param seconds - Lock duration in seconds
+ * @returns The validated seconds value
+ * @throws ValidationError if duration is invalid or out of range
+ *
+ * @example
+ * ```typescript
+ * const sixMonths = validateLockDuration(15_552_000);
+ * ```
+ */
+declare function validateLockDuration(seconds: number): number;
+/**
+ * Validate an array has items and doesn't exceed max length
+ *
+ * @param arr - Array to validate
+ * @param maxLength - Maximum allowed length
+ * @param name - Name for error messages
+ * @returns The validated array
+ */
+declare function validateArray<T>(arr: T[], maxLength: number, name: string): T[];
+/**
+ * Validate string length
+ *
+ * @param str - String to validate
+ * @param maxLength - Maximum allowed length
+ * @param name - Name for error messages
+ * @returns The validated string
+ */
+declare function validateString(str: string, maxLength: number, name: string): string;
+
+/**
+ * Formatting utilities for Loop Protocol SDK
+ */
+
+/**
+ * Format a CRED amount for display
+ *
+ * @param amount - Amount in smallest units (1 CRED = 1,000,000)
+ * @returns Formatted string like "1,234.56 CRED"
+ *
+ * @example
+ * ```typescript
+ * formatCred(new BN(1_234_560_000)); // "1,234.56 CRED"
+ * ```
+ */
+declare function formatCred(amount: BN): string;
+/**
+ * Format an OXO amount for display
+ *
+ * @param amount - Amount in smallest units (1 OXO = 1,000,000)
+ * @returns Formatted string like "1,234.56 OXO"
+ *
+ * @example
+ * ```typescript
+ * formatOxo(new BN(1_234_560_000)); // "1,234.56 OXO"
+ * ```
+ */
+declare function formatOxo(amount: BN): string;
+/**
+ * Format a percentage from basis points
+ *
+ * @param bps - Basis points (100 bps = 1%)
+ * @returns Formatted string like "5.00%"
+ *
+ * @example
+ * ```typescript
+ * formatPercentage(500);  // "5.00%"
+ * formatPercentage(25);   // "0.25%"
+ * formatPercentage(10000); // "100.00%"
+ * ```
+ */
+declare function formatPercentage(bps: number): string;
+/**
+ * Format a duration in seconds to human-readable string
+ *
+ * @param seconds - Duration in seconds
+ * @returns Human-readable string like "6 months" or "1 year"
+ *
+ * @example
+ * ```typescript
+ * formatDuration(15_552_000);  // "6 months"
+ * formatDuration(31_536_000);  // "1 year"
+ * formatDuration(126_144_000); // "4 years"
+ * formatDuration(86400);       // "1 day"
+ * ```
+ */
+declare function formatDuration(seconds: number): string;
+/**
+ * Shorten a public key address for display
+ *
+ * @param address - PublicKey or string address
+ * @param chars - Number of characters to show on each end (default: 4)
+ * @returns Shortened address like "7xKX...3nP9"
+ *
+ * @example
+ * ```typescript
+ * shortenAddress(new PublicKey('7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU'));
+ * // "7xKX...sAsU"
+ * ```
+ */
+declare function shortenAddress(address: PublicKey | string, chars?: number): string;
+/**
+ * Format a Unix timestamp to readable date string
+ *
+ * @param timestamp - Unix timestamp in seconds
+ * @returns Formatted date string
+ *
+ * @example
+ * ```typescript
+ * formatTimestamp(1700000000); // "Nov 14, 2023"
+ * ```
+ */
+declare function formatTimestamp(timestamp: number): string;
+/**
+ * Format a Unix timestamp to relative time string
+ *
+ * @param timestamp - Unix timestamp in seconds
+ * @returns Relative time string like "in 2 days" or "3 hours ago"
+ *
+ * @example
+ * ```typescript
+ * formatRelativeTime(futureTimestamp);  // "in 2 days"
+ * formatRelativeTime(pastTimestamp);    // "3 hours ago"
+ * ```
+ */
+declare function formatRelativeTime(timestamp: number): string;
+/**
+ * Format a number with compact notation for large values
+ *
+ * @param value - Numeric value
+ * @returns Compact string like "1.2M" or "3.5K"
+ *
+ * @example
+ * ```typescript
+ * formatCompact(1_500_000);  // "1.5M"
+ * formatCompact(25_000);     // "25K"
+ * formatCompact(999);        // "999"
+ * ```
+ */
+declare function formatCompact(value: number): string;
+
+/**
  * Loop Protocol SDK
  *
  * Complete TypeScript SDK for interacting with Loop Protocol programs on Solana.
@@ -1011,6 +1468,14 @@ declare class Loop {
     readonly attention: AttentionCaptureModule;
     /** Data Capture Module - User-controlled data monetization */
     readonly data: DataCaptureModule;
+    /** Para Module - Passkey authentication and session keys */
+    readonly para: ParaModule;
+    /** Squads Module - Smart account policies */
+    readonly squads: SquadsModule;
+    /** Reclaim Module - Zero-knowledge proof verification */
+    readonly reclaim: ReclaimModule;
+    /** TEE Module - Trusted execution environment integration */
+    readonly tee: TeeModule;
     constructor(config: LoopConfig);
     /** Get program IDs */
     get programIds(): {
@@ -3063,4 +3528,4 @@ declare class TEEIntegration {
     registerTrustedAgent(user: PublicKey, attestation: EnclaveAttestation): Promise<AgentRegistration>;
 }
 
-export { type Ad, type AdPreferences, type AdProfile, type AffiliateStats, type AgentIdentity, type AgentPermission, type AgentPolicy, type AgentRegistration, AgentStatus, AgentType, AnonymizationLevel, type ApprovalResult, ArbitrageAction, type ArbitrageExecution, AttentionCaptureModule, type Attestation, AttestationType, AvpModule, type BehaviorModel, type BondingCurve, CONSTANTS, type CapabilityId, type CaptureAuthority, type CaptureResult, CaptureType, ClaimStatus, type ClaimSubmission, ClaimType, type ClaimVote, ClaimVoteType, ComputeCaptureModule, type ComputeStats, type ConversionRecord, type CredConfig, CredModule, DataCaptureModule, type DataLicense, type DataLicenseTerms, type DataPricingConfig, type DataStats, type DataType, type DeploymentPosition, type DeviceCapabilities, type DeviceInfo, type DeviceRegistration, DeviceType, type EnclaveAttestation, EnergyCapture, type EnergyStats, type Escrow, EscrowStatus, type Heir, type InheritanceConfig, type InheritancePlan, InsuranceCapture, type InsuranceStats, type IntroCompletion, IntroOutcome, type IntroRequest, type IntroTerms, type LicenseTerms, LiquidityCapture, type LiquidityStats, LiquidityStrategy, Loop, type LoopConfig, LoopPDA, NetworkCaptureModule, type NetworkStats, type NodeRegistration, NodeType, type OxoConfig, OxoModule, PROGRAM_IDS, ParaIntegration, type PasskeyWallet, PermissionLevel, type PolicyConfig, type PoolMembership, PositionStatus, type Proposal, type RebalanceResult, ReclaimIntegration, ReferralCaptureModule, type ReleaseCondition, type ReputationStake, type ReserveStatus, type ResourceProfile, type ResourceSpec, RiskTolerance, type SessionInfo, type SessionKey, type SessionKeyPermissions, type SignedTransaction, SkillCaptureModule, type SkillLicense, type SkillStats, SkillType, type SmartAccount, type SmartAccountConfig, SocialCapture, type SocialStats, SquadsIntegration, type StackRecord, TEEIntegration, type TaskAcceptance, TaskStatus, type TaskSubmission, type TrackedLink, type UsageReport, type Vault, VaultModule, type VeOxoPosition, type VerificationResult, type ViewVerification, type VoteSubmission, type VtpConfig, VtpModule, type WithdrawalResult, type ZKProof, Loop as default };
+export { type Ad, type AdPreferences, type AdProfile, type AffiliateStats, type AgentIdentity, AgentNotAuthorizedError, AgentNotFoundError, type AgentPermission, type AgentPolicy, type AgentRegistration, AgentStatus, AgentType, AnonymizationLevel, type ApprovalResult, ArbitrageAction, type ArbitrageExecution, AttentionCaptureModule, type Attestation, AttestationType, AvpModule, type BehaviorModel, type BondingCurve, CONSTANTS, type CapabilityId, type CaptureAuthority, CaptureFailedError, type CaptureResult, CaptureType, ClaimStatus, type ClaimSubmission, ClaimType, type ClaimVote, ClaimVoteType, ComputeCaptureModule, type ComputeStats, type ConversionRecord, type CredConfig, CredModule, DataCaptureModule, type DataLicense, type DataLicenseTerms, type DataPricingConfig, type DataStats, type DataType, type DeploymentPosition, type DeviceCapabilities, type DeviceInfo, type DeviceRegistration, DeviceType, type EnclaveAttestation, EnergyCapture, type EnergyStats, type Escrow, EscrowStatus, type Heir, type InheritanceConfig, type InheritancePlan, InsufficientBalanceError, InsufficientFundsError, InsuranceCapture, type InsuranceStats, type IntroCompletion, IntroOutcome, type IntroRequest, type IntroTerms, InvalidAmountError, InvalidCaptureTypeError, InvalidPublicKeyError, type LicenseTerms, LiquidityCapture, type LiquidityStats, LiquidityStrategy, Loop, type LoopConfig, LoopError, LoopPDA, NetworkCaptureModule, type NetworkStats, type NodeRegistration, NodeType, type OxoConfig, OxoModule, PROGRAM_IDS, ParaIntegration, type PasskeyWallet, PermissionLevel, type PolicyConfig, PolicyViolationError, type PoolMembership, PositionStatus, ProofVerificationFailedError, type Proposal, type RebalanceResult, ReclaimIntegration, ReferralCaptureModule, type ReleaseCondition, type ReputationStake, type ReserveStatus, type ResourceProfile, type ResourceSpec, type RetryConfig, RiskTolerance, SessionExpiredError, type SessionInfo, type SessionKey, type SessionKeyPermissions, type SignedTransaction, SkillCaptureModule, type SkillLicense, type SkillStats, SkillType, type SmartAccount, type SmartAccountConfig, SocialCapture, type SocialStats, SquadsIntegration, type StackRecord, StackingNotMatureError, StackingPositionNotFoundError, TEEIntegration, type TaskAcceptance, TaskStatus, type TaskSubmission, type TrackedLink, TransactionFailedError, TransactionTimeoutError, UnauthorizedError, type UsageReport, ValidationError, type Vault, VaultAlreadyExistsError, VaultModule, VaultNotFoundError, type VeOxoPosition, type VerificationResult, type ViewVerification, type VoteSubmission, type VtpConfig, VtpModule, type WithdrawalResult, type ZKProof, Loop as default, formatCompact, formatCred, formatDuration, formatOxo, formatPercentage, formatRelativeTime, formatTimestamp, shortenAddress, sleep, tryWithRetry, validateAmount, validateArray, validateLockDuration, validateNonNegativeAmount, validatePercentage, validatePositiveAmount, validatePublicKey, validateString, withRetry };

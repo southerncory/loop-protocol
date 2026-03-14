@@ -44,6 +44,7 @@ import {
 } from '@solana/spl-token';
 import * as anchor from '@coral-xyz/anchor';
 import { BN } from '@coral-xyz/anchor';
+import { ParaModule, SquadsModule, ReclaimModule, TeeModule } from './security';
 
 // ============================================================================
 // PROGRAM IDS
@@ -1436,6 +1437,10 @@ export class Loop {
     this.referral = new ReferralCaptureModule(this);
     this.attention = new AttentionCaptureModule(this);
     this.data = new DataCaptureModule(this);
+    this.para = new ParaModule(this);
+    this.squads = new SquadsModule(this);
+    this.reclaim = new ReclaimModule(this);
+    this.tee = new TeeModule(this);
   }
 
   /** Get program IDs */

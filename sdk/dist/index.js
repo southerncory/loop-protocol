@@ -20,6 +20,8 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/index.ts
 var index_exports = {};
 __export(index_exports, {
+  AgentNotAuthorizedError: () => AgentNotAuthorizedError,
+  AgentNotFoundError: () => AgentNotFoundError,
   AgentStatus: () => AgentStatus,
   AgentType: () => AgentType,
   AnonymizationLevel: () => AnonymizationLevel,
@@ -28,6 +30,7 @@ __export(index_exports, {
   AttestationType: () => AttestationType,
   AvpModule: () => AvpModule,
   CONSTANTS: () => CONSTANTS,
+  CaptureFailedError: () => CaptureFailedError,
   CaptureType: () => CaptureType,
   ClaimStatus: () => ClaimStatus,
   ClaimType: () => ClaimType,
@@ -38,11 +41,17 @@ __export(index_exports, {
   DeviceType: () => DeviceType,
   EnergyCapture: () => EnergyCapture,
   EscrowStatus: () => EscrowStatus,
+  InsufficientBalanceError: () => InsufficientBalanceError,
+  InsufficientFundsError: () => InsufficientFundsError,
   InsuranceCapture: () => InsuranceCapture,
   IntroOutcome: () => IntroOutcome,
+  InvalidAmountError: () => InvalidAmountError,
+  InvalidCaptureTypeError: () => InvalidCaptureTypeError,
+  InvalidPublicKeyError: () => InvalidPublicKeyError,
   LiquidityCapture: () => LiquidityCapture,
   LiquidityStrategy: () => LiquidityStrategy,
   Loop: () => Loop,
+  LoopError: () => LoopError,
   LoopPDA: () => LoopPDA,
   NetworkCaptureModule: () => NetworkCaptureModule,
   NodeType: () => NodeType,
@@ -50,30 +59,586 @@ __export(index_exports, {
   PROGRAM_IDS: () => PROGRAM_IDS,
   ParaIntegration: () => ParaIntegration,
   PermissionLevel: () => PermissionLevel,
+  PolicyViolationError: () => PolicyViolationError,
   PositionStatus: () => PositionStatus,
+  ProofVerificationFailedError: () => ProofVerificationFailedError,
   ReclaimIntegration: () => ReclaimIntegration,
   ReferralCaptureModule: () => ReferralCaptureModule,
   RiskTolerance: () => RiskTolerance,
+  SessionExpiredError: () => SessionExpiredError,
   SkillCaptureModule: () => SkillCaptureModule,
   SkillType: () => SkillType,
   SocialCapture: () => SocialCapture,
   SquadsIntegration: () => SquadsIntegration,
+  StackingNotMatureError: () => StackingNotMatureError,
+  StackingPositionNotFoundError: () => StackingPositionNotFoundError,
   TEEIntegration: () => TEEIntegration,
   TaskStatus: () => TaskStatus,
+  TransactionFailedError: () => TransactionFailedError,
+  TransactionTimeoutError: () => TransactionTimeoutError,
+  UnauthorizedError: () => UnauthorizedError,
+  ValidationError: () => ValidationError,
+  VaultAlreadyExistsError: () => VaultAlreadyExistsError,
   VaultModule: () => VaultModule,
+  VaultNotFoundError: () => VaultNotFoundError,
   VtpModule: () => VtpModule,
-  default: () => index_default
+  default: () => index_default,
+  formatCompact: () => formatCompact,
+  formatCred: () => formatCred,
+  formatDuration: () => formatDuration,
+  formatOxo: () => formatOxo,
+  formatPercentage: () => formatPercentage,
+  formatRelativeTime: () => formatRelativeTime,
+  formatTimestamp: () => formatTimestamp,
+  shortenAddress: () => shortenAddress,
+  sleep: () => sleep,
+  tryWithRetry: () => tryWithRetry,
+  validateAmount: () => validateAmount,
+  validateArray: () => validateArray,
+  validateLockDuration: () => validateLockDuration,
+  validateNonNegativeAmount: () => validateNonNegativeAmount,
+  validatePercentage: () => validatePercentage,
+  validatePositiveAmount: () => validatePositiveAmount,
+  validatePublicKey: () => validatePublicKey,
+  validateString: () => validateString,
+  withRetry: () => withRetry
 });
 module.exports = __toCommonJS(index_exports);
-var import_web3 = require("@solana/web3.js");
+var import_web32 = require("@solana/web3.js");
 var import_spl_token = require("@solana/spl-token");
+var import_anchor2 = require("@coral-xyz/anchor");
+
+// src/security/para.ts
+var ParaModule = class {
+  constructor(loop) {
+    this.loop = loop;
+  }
+  /** Check if Para is available */
+  isAvailable() {
+    return false;
+  }
+  /** Create passkey for user */
+  async createPasskey(_userId) {
+    throw new Error("Para integration not yet implemented");
+  }
+  /** Authenticate with passkey */
+  async authenticate(_challenge) {
+    throw new Error("Para integration not yet implemented");
+  }
+  /** Create session key with limited permissions */
+  async createSessionKey(_permissions, _expirySeconds) {
+    throw new Error("Para integration not yet implemented");
+  }
+};
+
+// src/security/squads.ts
+var SquadsModule = class {
+  constructor(loop) {
+    this.loop = loop;
+  }
+  /** Check if Squads is available */
+  isAvailable() {
+    return false;
+  }
+  /** Create multisig with members */
+  async createMultisig(_members, _threshold) {
+    throw new Error("Squads integration not yet implemented");
+  }
+  /** Propose transaction */
+  async proposeTransaction(_multisig, _instructions) {
+    throw new Error("Squads integration not yet implemented");
+  }
+  /** Approve transaction */
+  async approveTransaction(_multisig, _transactionId) {
+    throw new Error("Squads integration not yet implemented");
+  }
+  /** Execute approved transaction */
+  async executeTransaction(_multisig, _transactionId) {
+    throw new Error("Squads integration not yet implemented");
+  }
+};
+
+// src/security/reclaim.ts
+var ReclaimModule = class {
+  constructor(loop) {
+    this.loop = loop;
+  }
+  /** Check if Reclaim is available */
+  isAvailable() {
+    return false;
+  }
+  /** Generate proof request for specific data */
+  async generateProofRequest(_providerId, _claims) {
+    throw new Error("Reclaim integration not yet implemented");
+  }
+  /** Verify zero-knowledge proof */
+  async verifyProof(_proof) {
+    throw new Error("Reclaim integration not yet implemented");
+  }
+  /** Get supported providers */
+  getSupportedProviders() {
+    return [];
+  }
+};
+
+// src/security/tee.ts
+var TeeModule = class {
+  constructor(loop) {
+    this.loop = loop;
+  }
+  /** Check if TEE is available */
+  isAvailable() {
+    return false;
+  }
+  /** Get TEE attestation quote */
+  async getAttestation() {
+    throw new Error("TEE integration not yet implemented");
+  }
+  /** Verify TEE attestation */
+  async verifyAttestation(_quote) {
+    throw new Error("TEE integration not yet implemented");
+  }
+  /** Execute in secure enclave */
+  async secureExecute(_code, _input) {
+    throw new Error("TEE integration not yet implemented");
+  }
+  /** Get enclave measurement */
+  async getMeasurement() {
+    throw new Error("TEE integration not yet implemented");
+  }
+};
+
+// src/errors.ts
+var LoopError = class extends Error {
+  constructor(message, code) {
+    super(message);
+    this.code = code;
+    this.name = "LoopError";
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+};
+var TransactionFailedError = class extends LoopError {
+  constructor(message = "Transaction failed to execute") {
+    super(message, "TRANSACTION_FAILED");
+    this.name = "TransactionFailedError";
+  }
+};
+var TransactionTimeoutError = class extends LoopError {
+  constructor(message = "Transaction timed out waiting for confirmation") {
+    super(message, "TRANSACTION_TIMEOUT");
+    this.name = "TransactionTimeoutError";
+  }
+};
+var InsufficientFundsError = class extends LoopError {
+  constructor(message = "Insufficient funds in wallet") {
+    super(message, "INSUFFICIENT_FUNDS");
+    this.name = "InsufficientFundsError";
+  }
+};
+var VaultNotFoundError = class extends LoopError {
+  constructor(message = "Vault not found") {
+    super(message, "VAULT_NOT_FOUND");
+    this.name = "VaultNotFoundError";
+  }
+};
+var VaultAlreadyExistsError = class extends LoopError {
+  constructor(message = "Vault already exists for this owner") {
+    super(message, "VAULT_ALREADY_EXISTS");
+    this.name = "VaultAlreadyExistsError";
+  }
+};
+var InsufficientBalanceError = class extends LoopError {
+  constructor(message = "Insufficient balance in vault") {
+    super(message, "INSUFFICIENT_BALANCE");
+    this.name = "InsufficientBalanceError";
+  }
+};
+var StackingPositionNotFoundError = class extends LoopError {
+  constructor(message = "Stacking position not found") {
+    super(message, "STACKING_POSITION_NOT_FOUND");
+    this.name = "StackingPositionNotFoundError";
+  }
+};
+var StackingNotMatureError = class extends LoopError {
+  constructor(message = "Stacking position has not reached maturity") {
+    super(message, "STACKING_NOT_MATURE");
+    this.name = "StackingNotMatureError";
+  }
+};
+var CaptureFailedError = class extends LoopError {
+  constructor(message = "Capture operation failed") {
+    super(message, "CAPTURE_FAILED");
+    this.name = "CaptureFailedError";
+  }
+};
+var ProofVerificationFailedError = class extends LoopError {
+  constructor(message = "Proof verification failed") {
+    super(message, "PROOF_VERIFICATION_FAILED");
+    this.name = "ProofVerificationFailedError";
+  }
+};
+var InvalidCaptureTypeError = class extends LoopError {
+  constructor(message = "Invalid capture type specified") {
+    super(message, "INVALID_CAPTURE_TYPE");
+    this.name = "InvalidCaptureTypeError";
+  }
+};
+var SessionExpiredError = class extends LoopError {
+  constructor(message = "Session has expired") {
+    super(message, "SESSION_EXPIRED");
+    this.name = "SessionExpiredError";
+  }
+};
+var UnauthorizedError = class extends LoopError {
+  constructor(message = "Unauthorized access") {
+    super(message, "UNAUTHORIZED");
+    this.name = "UnauthorizedError";
+  }
+};
+var PolicyViolationError = class extends LoopError {
+  constructor(message = "Operation violates security policy") {
+    super(message, "POLICY_VIOLATION");
+    this.name = "PolicyViolationError";
+  }
+};
+var AgentNotFoundError = class extends LoopError {
+  constructor(message = "Agent not found") {
+    super(message, "AGENT_NOT_FOUND");
+    this.name = "AgentNotFoundError";
+  }
+};
+var AgentNotAuthorizedError = class extends LoopError {
+  constructor(message = "Agent is not authorized for this operation") {
+    super(message, "AGENT_NOT_AUTHORIZED");
+    this.name = "AgentNotAuthorizedError";
+  }
+};
+var InvalidPublicKeyError = class extends LoopError {
+  constructor(message = "Invalid public key format") {
+    super(message, "INVALID_PUBLIC_KEY");
+    this.name = "InvalidPublicKeyError";
+  }
+};
+var InvalidAmountError = class extends LoopError {
+  constructor(message = "Invalid amount specified") {
+    super(message, "INVALID_AMOUNT");
+    this.name = "InvalidAmountError";
+  }
+};
+
+// src/utils/retry.ts
+var DEFAULT_CONFIG = {
+  maxRetries: 3,
+  baseDelayMs: 1e3,
+  maxDelayMs: 3e4,
+  jitterFactor: 0.1
+};
+var NON_RETRYABLE_ERRORS = [
+  "InvalidPublicKey",
+  "InvalidAmount",
+  "ValidationError",
+  "InsufficientFunds",
+  "AccountNotFound",
+  "InvalidInstruction",
+  "InvalidOwner",
+  "InvalidAuthority",
+  "Unauthorized"
+];
+var RETRYABLE_STATUS_CODES = [
+  429,
+  // Too Many Requests
+  503,
+  // Service Unavailable
+  502,
+  // Bad Gateway
+  500,
+  // Internal Server Error (sometimes transient)
+  504
+  // Gateway Timeout
+];
+async function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+function isRetryableError(error) {
+  if (!error) return false;
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorName = error instanceof Error ? error.name : "";
+  for (const nonRetryable of NON_RETRYABLE_ERRORS) {
+    if (errorMessage.includes(nonRetryable) || errorName.includes(nonRetryable)) {
+      return false;
+    }
+  }
+  if (typeof error === "object" && error !== null) {
+    const statusCode = error.statusCode || error.status || error.code;
+    if (typeof statusCode === "number" && RETRYABLE_STATUS_CODES.includes(statusCode)) {
+      return true;
+    }
+  }
+  if (errorMessage.includes("ECONNRESET") || errorMessage.includes("ETIMEDOUT") || errorMessage.includes("ENOTFOUND") || errorMessage.includes("ECONNREFUSED") || errorMessage.includes("fetch failed") || errorMessage.includes("network") || errorMessage.includes("timeout") || errorMessage.includes("socket hang up")) {
+    return true;
+  }
+  if (errorMessage.includes("blockhash not found") || errorMessage.includes("Node is behind") || errorMessage.includes("Too many requests") || errorMessage.includes("rate limit")) {
+    return true;
+  }
+  return false;
+}
+function calculateDelay(attempt, config) {
+  let delay = config.baseDelayMs * Math.pow(2, attempt);
+  delay = Math.min(delay, config.maxDelayMs);
+  if (config.jitterFactor && config.jitterFactor > 0) {
+    const jitter = delay * config.jitterFactor * Math.random();
+    delay = delay + jitter;
+  }
+  return Math.floor(delay);
+}
+async function withRetry(fn, config) {
+  const finalConfig = { ...DEFAULT_CONFIG, ...config };
+  let lastError;
+  for (let attempt = 0; attempt <= finalConfig.maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (attempt >= finalConfig.maxRetries) {
+        break;
+      }
+      if (!isRetryableError(error)) {
+        throw error;
+      }
+      const delay = calculateDelay(attempt, finalConfig);
+      await sleep(delay);
+    }
+  }
+  throw lastError;
+}
+async function tryWithRetry(fn, config) {
+  try {
+    const result = await withRetry(fn, config);
+    return { success: true, result };
+  } catch (error) {
+    return { success: false, error };
+  }
+}
+
+// src/utils/validation.ts
+var import_web3 = require("@solana/web3.js");
 var import_anchor = require("@coral-xyz/anchor");
+var MIN_LOCK_SECONDS = 15552e3;
+var MAX_LOCK_SECONDS = 126144e3;
+var ValidationError = class extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "ValidationError";
+  }
+};
+function validatePublicKey(key) {
+  if (key instanceof import_web3.PublicKey) {
+    return key;
+  }
+  if (typeof key !== "string") {
+    throw new ValidationError("Public key must be a string or PublicKey instance");
+  }
+  const trimmed = key.trim();
+  if (trimmed.length === 0) {
+    throw new ValidationError("Public key cannot be empty");
+  }
+  try {
+    return new import_web3.PublicKey(trimmed);
+  } catch (e) {
+    throw new ValidationError(`Invalid public key: ${trimmed}`);
+  }
+}
+function validateAmount(amount) {
+  if (amount instanceof import_anchor.BN) {
+    return amount;
+  }
+  if (typeof amount !== "number") {
+    throw new ValidationError("Amount must be a number or BN instance");
+  }
+  if (!Number.isFinite(amount)) {
+    throw new ValidationError("Amount must be a finite number");
+  }
+  if (!Number.isInteger(amount)) {
+    throw new ValidationError("Amount must be an integer (use smallest unit, e.g., lamports)");
+  }
+  return new import_anchor.BN(amount);
+}
+function validatePositiveAmount(amount) {
+  const bn = validateAmount(amount);
+  if (bn.isNeg() || bn.isZero()) {
+    throw new ValidationError("Amount must be positive (greater than 0)");
+  }
+  return bn;
+}
+function validateNonNegativeAmount(amount) {
+  const bn = validateAmount(amount);
+  if (bn.isNeg()) {
+    throw new ValidationError("Amount must be non-negative (>= 0)");
+  }
+  return bn;
+}
+function validatePercentage(bps) {
+  if (typeof bps !== "number") {
+    throw new ValidationError("Percentage must be a number");
+  }
+  if (!Number.isFinite(bps)) {
+    throw new ValidationError("Percentage must be a finite number");
+  }
+  if (!Number.isInteger(bps)) {
+    throw new ValidationError("Percentage must be an integer (basis points)");
+  }
+  if (bps < 0 || bps > 1e4) {
+    throw new ValidationError("Percentage must be between 0 and 10000 basis points (0-100%)");
+  }
+  return bps;
+}
+function validateLockDuration(seconds) {
+  if (typeof seconds !== "number") {
+    throw new ValidationError("Lock duration must be a number");
+  }
+  if (!Number.isFinite(seconds)) {
+    throw new ValidationError("Lock duration must be a finite number");
+  }
+  if (!Number.isInteger(seconds)) {
+    throw new ValidationError("Lock duration must be an integer (seconds)");
+  }
+  if (seconds < MIN_LOCK_SECONDS) {
+    throw new ValidationError(
+      `Lock duration must be at least ${MIN_LOCK_SECONDS} seconds (6 months)`
+    );
+  }
+  if (seconds > MAX_LOCK_SECONDS) {
+    throw new ValidationError(
+      `Lock duration must be at most ${MAX_LOCK_SECONDS} seconds (4 years)`
+    );
+  }
+  return seconds;
+}
+function validateArray(arr, maxLength, name) {
+  if (!Array.isArray(arr)) {
+    throw new ValidationError(`${name} must be an array`);
+  }
+  if (arr.length === 0) {
+    throw new ValidationError(`${name} cannot be empty`);
+  }
+  if (arr.length > maxLength) {
+    throw new ValidationError(`${name} cannot have more than ${maxLength} items`);
+  }
+  return arr;
+}
+function validateString(str, maxLength, name) {
+  if (typeof str !== "string") {
+    throw new ValidationError(`${name} must be a string`);
+  }
+  const trimmed = str.trim();
+  if (trimmed.length === 0) {
+    throw new ValidationError(`${name} cannot be empty`);
+  }
+  if (trimmed.length > maxLength) {
+    throw new ValidationError(`${name} cannot exceed ${maxLength} characters`);
+  }
+  return trimmed;
+}
+
+// src/utils/format.ts
+var CRED_DECIMALS = 6;
+var OXO_DECIMALS = 6;
+function formatTokenAmount(amount, decimals, displayDecimals = 2) {
+  const str = amount.toString().padStart(decimals + 1, "0");
+  const integerPart = str.slice(0, -decimals) || "0";
+  const decimalPart = str.slice(-decimals);
+  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const truncatedDecimal = decimalPart.slice(0, displayDecimals).padEnd(displayDecimals, "0");
+  return `${formattedInteger}.${truncatedDecimal}`;
+}
+function formatCred(amount) {
+  return `${formatTokenAmount(amount, CRED_DECIMALS)} CRED`;
+}
+function formatOxo(amount) {
+  return `${formatTokenAmount(amount, OXO_DECIMALS)} OXO`;
+}
+function formatPercentage(bps) {
+  const percent = bps / 100;
+  return `${percent.toFixed(2)}%`;
+}
+function formatDuration(seconds) {
+  const MINUTE = 60;
+  const HOUR = MINUTE * 60;
+  const DAY = HOUR * 24;
+  const MONTH = DAY * 30;
+  const YEAR = DAY * 365;
+  if (seconds >= YEAR) {
+    const years = Math.floor(seconds / YEAR);
+    return years === 1 ? "1 year" : `${years} years`;
+  }
+  if (seconds >= MONTH) {
+    const months = Math.floor(seconds / MONTH);
+    return months === 1 ? "1 month" : `${months} months`;
+  }
+  if (seconds >= DAY) {
+    const days = Math.floor(seconds / DAY);
+    return days === 1 ? "1 day" : `${days} days`;
+  }
+  if (seconds >= HOUR) {
+    const hours = Math.floor(seconds / HOUR);
+    return hours === 1 ? "1 hour" : `${hours} hours`;
+  }
+  if (seconds >= MINUTE) {
+    const minutes = Math.floor(seconds / MINUTE);
+    return minutes === 1 ? "1 minute" : `${minutes} minutes`;
+  }
+  return seconds === 1 ? "1 second" : `${seconds} seconds`;
+}
+function shortenAddress(address, chars = 4) {
+  const str = typeof address === "string" ? address : address.toBase58();
+  if (str.length <= chars * 2 + 3) {
+    return str;
+  }
+  return `${str.slice(0, chars)}...${str.slice(-chars)}`;
+}
+function formatTimestamp(timestamp) {
+  const date = new Date(timestamp * 1e3);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
+}
+function formatRelativeTime(timestamp) {
+  const now = Math.floor(Date.now() / 1e3);
+  const diff = timestamp - now;
+  const absDiff = Math.abs(diff);
+  const duration = formatDuration(absDiff);
+  if (diff > 0) {
+    return `in ${duration}`;
+  } else if (diff < 0) {
+    return `${duration} ago`;
+  }
+  return "now";
+}
+function formatCompact(value) {
+  const BILLION = 1e9;
+  const MILLION = 1e6;
+  const THOUSAND = 1e3;
+  if (value >= BILLION) {
+    return `${(value / BILLION).toFixed(1)}B`;
+  }
+  if (value >= MILLION) {
+    return `${(value / MILLION).toFixed(1)}M`;
+  }
+  if (value >= THOUSAND) {
+    return `${(value / THOUSAND).toFixed(1)}K`;
+  }
+  return value.toString();
+}
+
+// src/index.ts
 var PROGRAM_IDS = {
-  VAULT: new import_web3.PublicKey("76FgGQNTw9maaV82og6U33KMZw4FCw9yGJu4M75hJ3Z7"),
-  CRED: new import_web3.PublicKey("FHVp7WrnUZq69aNZgYw2YNmitSdj8UCwoJ8C2A1M98JA"),
-  OXO: new import_web3.PublicKey("3qxTuF17rTdGFECPimRWu51uUycSwAL4ebd7w9s2xx4z"),
-  VTP: new import_web3.PublicKey("4D2PnJ4txLTQAqcoURt5eUQHMM85QsGPdGBHdsineuWj"),
-  AVP: new import_web3.PublicKey("H5c9xfPYcx6EtC8hpThshARtUR7tq1NfMJVrTx8z9Jcx")
+  VAULT: new import_web32.PublicKey("76FgGQNTw9maaV82og6U33KMZw4FCw9yGJu4M75hJ3Z7"),
+  CRED: new import_web32.PublicKey("FHVp7WrnUZq69aNZgYw2YNmitSdj8UCwoJ8C2A1M98JA"),
+  OXO: new import_web32.PublicKey("3qxTuF17rTdGFECPimRWu51uUycSwAL4ebd7w9s2xx4z"),
+  VTP: new import_web32.PublicKey("4D2PnJ4txLTQAqcoURt5eUQHMM85QsGPdGBHdsineuWj"),
+  AVP: new import_web32.PublicKey("H5c9xfPYcx6EtC8hpThshARtUR7tq1NfMJVrTx8z9Jcx")
 };
 var CONSTANTS = {
   // Vault
@@ -509,35 +1074,35 @@ var LoopPDA = class {
   // ─────────────────────────────────────────────────────────────────────────
   /** Derive vault PDA for an owner */
   static vault(owner) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("vault"), owner.toBuffer()],
       PROGRAM_IDS.VAULT
     );
   }
   /** Derive stack record PDA */
   static stackRecord(vault, stackIndex) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("stack"), vault.toBuffer(), stackIndex.toArrayLike(Buffer, "le", 8)],
       PROGRAM_IDS.VAULT
     );
   }
   /** Derive agent permission PDA */
   static agentPermission(vault, agent) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("agent_perm"), vault.toBuffer(), agent.toBuffer()],
       PROGRAM_IDS.VAULT
     );
   }
   /** Derive vault inheritance config PDA */
   static vaultInheritance(vault) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("inheritance"), vault.toBuffer()],
       PROGRAM_IDS.VAULT
     );
   }
   /** Derive capture authority PDA */
   static captureAuthority() {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("capture_authority")],
       PROGRAM_IDS.VAULT
     );
@@ -547,14 +1112,14 @@ var LoopPDA = class {
   // ─────────────────────────────────────────────────────────────────────────
   /** Derive cred config PDA */
   static credConfig() {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("cred_config")],
       PROGRAM_IDS.CRED
     );
   }
   /** Derive capture auth PDA for a module */
   static captureAuth(moduleAddress) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("capture_auth"), moduleAddress.toBuffer()],
       PROGRAM_IDS.CRED
     );
@@ -564,21 +1129,21 @@ var LoopPDA = class {
   // ─────────────────────────────────────────────────────────────────────────
   /** Derive OXO config PDA */
   static oxoConfig() {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("config")],
       PROGRAM_IDS.OXO
     );
   }
   /** Derive veOXO position PDA */
   static veOxoPosition(owner) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("ve_position"), owner.toBuffer()],
       PROGRAM_IDS.OXO
     );
   }
   /** Derive bonding curve PDA for agent token */
   static bondingCurve(agentMint) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("bonding_curve"), agentMint.toBuffer()],
       PROGRAM_IDS.OXO
     );
@@ -588,14 +1153,14 @@ var LoopPDA = class {
   // ─────────────────────────────────────────────────────────────────────────
   /** Derive VTP config PDA */
   static vtpConfig() {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("vtp_config")],
       PROGRAM_IDS.VTP
     );
   }
   /** Derive escrow PDA */
   static escrow(sender, recipient, createdAt) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [
         Buffer.from("escrow"),
         sender.toBuffer(),
@@ -607,7 +1172,7 @@ var LoopPDA = class {
   }
   /** Derive VTP inheritance plan PDA */
   static vtpInheritance(owner) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("inheritance"), owner.toBuffer()],
       PROGRAM_IDS.VTP
     );
@@ -617,7 +1182,7 @@ var LoopPDA = class {
   // ─────────────────────────────────────────────────────────────────────────
   /** Derive agent identity PDA */
   static agentIdentity(agent) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("agent"), agent.toBuffer()],
       PROGRAM_IDS.AVP
     );
@@ -642,6 +1207,10 @@ var Loop = class {
     this.referral = new ReferralCaptureModule(this);
     this.attention = new AttentionCaptureModule(this);
     this.data = new DataCaptureModule(this);
+    this.para = new ParaModule(this);
+    this.squads = new SquadsModule(this);
+    this.reclaim = new ReclaimModule(this);
+    this.tee = new TeeModule(this);
   }
   /** Get program IDs */
   get programIds() {
@@ -713,7 +1282,7 @@ var VaultModule = class {
       [
         { pubkey: vaultPda, isSigner: false, isWritable: true },
         { pubkey: owner, isSigner: true, isWritable: true },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { bump }
     );
@@ -777,7 +1346,7 @@ var VaultModule = class {
   async stack(owner, amount, durationDays) {
     const [vaultPda] = this.getVaultAddress(owner);
     const vault = await this.getVault(owner);
-    const stackIndex = vault?.stackedBalance || new import_anchor.BN(0);
+    const stackIndex = vault?.stackedBalance || new import_anchor2.BN(0);
     const [stackPda, stackBump] = this.getStackAddress(vaultPda, stackIndex);
     return this.createInstruction(
       "stack",
@@ -785,7 +1354,7 @@ var VaultModule = class {
         { pubkey: vaultPda, isSigner: false, isWritable: true },
         { pubkey: stackPda, isSigner: false, isWritable: true },
         { pubkey: owner, isSigner: true, isWritable: true },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { amount, durationDays }
     );
@@ -847,7 +1416,7 @@ var VaultModule = class {
         { pubkey: vaultPda, isSigner: false, isWritable: true },
         { pubkey: permPda, isSigner: false, isWritable: true },
         { pubkey: owner, isSigner: true, isWritable: true },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { agent, permissionLevel, dailyLimit }
     );
@@ -925,7 +1494,7 @@ var VaultModule = class {
         { pubkey: vaultPda, isSigner: false, isWritable: false },
         { pubkey: inheritancePda, isSigner: false, isWritable: true },
         { pubkey: owner, isSigner: true, isWritable: true },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { heir, inactivityThresholdDays }
     );
@@ -950,7 +1519,7 @@ var VaultModule = class {
   createInstruction(name, accounts, data) {
     const discriminator = Buffer.alloc(8);
     const dataBuffer = Buffer.from(JSON.stringify(data));
-    return new import_web3.TransactionInstruction({
+    return new import_web32.TransactionInstruction({
       keys: accounts,
       programId: PROGRAM_IDS.VAULT,
       data: Buffer.concat([discriminator, dataBuffer])
@@ -1006,7 +1575,7 @@ var CredModule = class {
         { pubkey: credMint, isSigner: false, isWritable: true },
         { pubkey: reserveVault, isSigner: false, isWritable: false },
         { pubkey: authority, isSigner: true, isWritable: true },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false },
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false },
         { pubkey: import_spl_token.TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }
       ],
       {}
@@ -1111,7 +1680,7 @@ var CredModule = class {
         { pubkey: captureAuthPda, isSigner: false, isWritable: true },
         { pubkey: moduleAddress, isSigner: false, isWritable: false },
         { pubkey: authority, isSigner: true, isWritable: true },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { captureType, moduleName }
     );
@@ -1125,18 +1694,18 @@ var CredModule = class {
   async getReserveStatus(reserveVault, credMint) {
     const [configPda] = this.getConfigAddress();
     return {
-      usdcReserve: new import_anchor.BN(0),
-      credSupply: new import_anchor.BN(0),
-      backingRatio: new import_anchor.BN(1e4),
+      usdcReserve: new import_anchor2.BN(0),
+      credSupply: new import_anchor2.BN(0),
+      backingRatio: new import_anchor2.BN(1e4),
       // 100%
-      totalMinted: new import_anchor.BN(0),
-      totalBurned: new import_anchor.BN(0)
+      totalMinted: new import_anchor2.BN(0),
+      totalBurned: new import_anchor2.BN(0)
     };
   }
   createInstruction(name, accounts, data) {
     const discriminator = Buffer.alloc(8);
     const dataBuffer = Buffer.from(JSON.stringify(data));
-    return new import_web3.TransactionInstruction({
+    return new import_web32.TransactionInstruction({
       keys: accounts,
       programId: PROGRAM_IDS.CRED,
       data: Buffer.concat([discriminator, dataBuffer])
@@ -1208,7 +1777,7 @@ var OxoModule = class {
         { pubkey: configPda, isSigner: false, isWritable: true },
         { pubkey: oxoMint, isSigner: false, isWritable: false },
         { pubkey: treasury, isSigner: false, isWritable: false },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { bump }
     );
@@ -1240,7 +1809,7 @@ var OxoModule = class {
         { pubkey: userOxoAccount, isSigner: false, isWritable: true },
         { pubkey: protocolOxoAccount, isSigner: false, isWritable: true },
         { pubkey: import_spl_token.TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { amount, lockSeconds, bump }
     );
@@ -1317,7 +1886,7 @@ var OxoModule = class {
    */
   async getCurrentVeOxo(owner) {
     const position = await this.getVePosition(owner);
-    if (!position) return new import_anchor.BN(0);
+    if (!position) return new import_anchor2.BN(0);
     return this.calculateDecayedVeOxo(position);
   }
   // ─────────────────────────────────────────────────────────────────────────
@@ -1349,7 +1918,7 @@ var OxoModule = class {
         { pubkey: creatorOxoAccount, isSigner: false, isWritable: true },
         { pubkey: treasuryOxoAccount, isSigner: false, isWritable: true },
         { pubkey: import_spl_token.TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { name, symbol, uri, bump }
     );
@@ -1440,28 +2009,28 @@ var OxoModule = class {
    * @param lockSeconds - Lock duration in seconds
    */
   calculateVeOxo(amount, lockSeconds) {
-    const sixMonths = new import_anchor.BN(CONSTANTS.MIN_LOCK_SECONDS);
-    const fourYears = new import_anchor.BN(CONSTANTS.MAX_LOCK_SECONDS);
+    const sixMonths = new import_anchor2.BN(CONSTANTS.MIN_LOCK_SECONDS);
+    const fourYears = new import_anchor2.BN(CONSTANTS.MAX_LOCK_SECONDS);
     if (lockSeconds.lte(sixMonths)) {
-      return amount.div(new import_anchor.BN(4));
+      return amount.div(new import_anchor2.BN(4));
     }
     if (lockSeconds.gte(fourYears)) {
-      return amount.mul(new import_anchor.BN(2));
+      return amount.mul(new import_anchor2.BN(2));
     }
     const range = fourYears.sub(sixMonths);
     const progress = lockSeconds.sub(sixMonths);
-    const baseMultiplier = new import_anchor.BN(25);
-    const additional = progress.mul(new import_anchor.BN(175)).div(range);
+    const baseMultiplier = new import_anchor2.BN(25);
+    const additional = progress.mul(new import_anchor2.BN(175)).div(range);
     const totalMultiplier = baseMultiplier.add(additional);
-    return amount.mul(totalMultiplier).div(new import_anchor.BN(100));
+    return amount.mul(totalMultiplier).div(new import_anchor2.BN(100));
   }
   /**
    * Calculate current decayed veOXO balance
    */
   calculateDecayedVeOxo(position) {
-    const now = new import_anchor.BN(Math.floor(Date.now() / 1e3));
+    const now = new import_anchor2.BN(Math.floor(Date.now() / 1e3));
     if (now.gte(position.unlockAt)) {
-      return new import_anchor.BN(0);
+      return new import_anchor2.BN(0);
     }
     if (now.lte(position.lockStart)) {
       return position.veOxoBalance;
@@ -1473,7 +2042,7 @@ var OxoModule = class {
   createInstruction(name, accounts, data) {
     const discriminator = Buffer.alloc(8);
     const dataBuffer = Buffer.from(JSON.stringify(data));
-    return new import_web3.TransactionInstruction({
+    return new import_web32.TransactionInstruction({
       keys: accounts,
       programId: PROGRAM_IDS.OXO,
       data: Buffer.concat([discriminator, dataBuffer])
@@ -1525,7 +2094,7 @@ var VtpModule = class {
         { pubkey: authority, isSigner: true, isWritable: true },
         { pubkey: configPda, isSigner: false, isWritable: true },
         { pubkey: feeRecipient, isSigner: false, isWritable: false },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { bump }
     );
@@ -1598,7 +2167,7 @@ var VtpModule = class {
    */
   async createEscrow(sender, recipient, amount, releaseConditions, expiry, senderCredAccount, escrowCredAccount, feeAccount) {
     const [configPda] = this.getConfigAddress();
-    const now = new import_anchor.BN(Math.floor(Date.now() / 1e3));
+    const now = new import_anchor2.BN(Math.floor(Date.now() / 1e3));
     const [escrowPda, bump] = this.getEscrowAddress(sender, recipient, now);
     return this.createInstruction(
       "create_escrow",
@@ -1611,7 +2180,7 @@ var VtpModule = class {
         { pubkey: escrowCredAccount, isSigner: false, isWritable: true },
         { pubkey: feeAccount, isSigner: false, isWritable: true },
         { pubkey: import_spl_token.TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { amount, releaseConditions, expiry, bump }
     );
@@ -1697,7 +2266,7 @@ var VtpModule = class {
       [
         { pubkey: owner, isSigner: true, isWritable: true },
         { pubkey: inheritancePda, isSigner: false, isWritable: true },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { heirs, inactivityThreshold, bump }
     );
@@ -1772,7 +2341,7 @@ var VtpModule = class {
   createInstruction(name, accounts, data) {
     const discriminator = Buffer.alloc(8);
     const dataBuffer = Buffer.from(JSON.stringify(data));
-    return new import_web3.TransactionInstruction({
+    return new import_web32.TransactionInstruction({
       keys: accounts,
       programId: PROGRAM_IDS.VTP,
       data: Buffer.concat([discriminator, dataBuffer])
@@ -1822,7 +2391,7 @@ var AvpModule = class {
       [
         { pubkey: agent, isSigner: true, isWritable: true },
         { pubkey: identityPda, isSigner: false, isWritable: true },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { principalHash: Array.from(principalHash), metadataUri, bump }
     );
@@ -1846,7 +2415,7 @@ var AvpModule = class {
         { pubkey: agent, isSigner: false, isWritable: false },
         { pubkey: identityPda, isSigner: false, isWritable: true },
         { pubkey: creatorOxoAccount, isSigner: false, isWritable: false },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { metadataUri, bump }
     );
@@ -2005,7 +2574,7 @@ var AvpModule = class {
   createInstruction(name, accounts, data) {
     const discriminator = Buffer.alloc(8);
     const dataBuffer = Buffer.from(JSON.stringify(data));
-    return new import_web3.TransactionInstruction({
+    return new import_web32.TransactionInstruction({
       keys: accounts,
       programId: PROGRAM_IDS.AVP,
       data: Buffer.concat([discriminator, dataBuffer])
@@ -2037,7 +2606,7 @@ var ComputeCaptureModule = class {
    * @param provider - Provider's public key
    */
   getResourceProfileAddress(provider) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("compute_profile"), provider.toBuffer()],
       PROGRAM_IDS.VAULT
     );
@@ -2048,7 +2617,7 @@ var ComputeCaptureModule = class {
    * @param taskId - Task identifier
    */
   getTaskAcceptanceAddress(provider, taskId) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("task_accept"), provider.toBuffer(), Buffer.from(taskId)],
       PROGRAM_IDS.VAULT
     );
@@ -2059,7 +2628,7 @@ var ComputeCaptureModule = class {
    * @param taskId - Task identifier
    */
   getTaskSubmissionAddress(provider, taskId) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("task_submit"), provider.toBuffer(), Buffer.from(taskId)],
       PROGRAM_IDS.VAULT
     );
@@ -2094,7 +2663,7 @@ var ComputeCaptureModule = class {
       [
         { pubkey: user, isSigner: true, isWritable: true },
         { pubkey: profilePda, isSigner: false, isWritable: true },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       {
         cpuCores: resources.cpu,
@@ -2134,7 +2703,7 @@ var ComputeCaptureModule = class {
         { pubkey: user, isSigner: true, isWritable: true },
         { pubkey: profilePda, isSigner: false, isWritable: true },
         { pubkey: acceptancePda, isSigner: false, isWritable: true },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { taskId, bidAmount: bid.toString(), bump }
     );
@@ -2173,7 +2742,7 @@ var ComputeCaptureModule = class {
         { pubkey: user, isSigner: true, isWritable: true },
         { pubkey: acceptancePda, isSigner: false, isWritable: true },
         { pubkey: submissionPda, isSigner: false, isWritable: true },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       {
         taskId,
@@ -2237,10 +2806,10 @@ var ComputeCaptureModule = class {
     const accountInfo = await this.loop.connection.getAccountInfo(profilePda);
     if (!accountInfo) {
       return {
-        totalTasks: new import_anchor.BN(0),
-        totalRewards: new import_anchor.BN(0),
+        totalTasks: new import_anchor2.BN(0),
+        totalRewards: new import_anchor2.BN(0),
         successRate: 0,
-        avgCompletionTime: new import_anchor.BN(0),
+        avgCompletionTime: new import_anchor2.BN(0),
         reputationScore: 0,
         activeTasks: 0
       };
@@ -2253,7 +2822,7 @@ var ComputeCaptureModule = class {
   createInstruction(name, accounts, data) {
     const discriminator = Buffer.alloc(8);
     const dataBuffer = Buffer.from(JSON.stringify(data));
-    return new import_web3.TransactionInstruction({
+    return new import_web32.TransactionInstruction({
       keys: accounts,
       programId: PROGRAM_IDS.VAULT,
       data: Buffer.concat([discriminator, dataBuffer])
@@ -2261,10 +2830,10 @@ var ComputeCaptureModule = class {
   }
   deserializeComputeStats(data) {
     return {
-      totalTasks: new import_anchor.BN(0),
-      totalRewards: new import_anchor.BN(0),
+      totalTasks: new import_anchor2.BN(0),
+      totalRewards: new import_anchor2.BN(0),
       successRate: 0,
-      avgCompletionTime: new import_anchor.BN(0),
+      avgCompletionTime: new import_anchor2.BN(0),
       reputationScore: 0,
       activeTasks: 0
     };
@@ -2282,7 +2851,7 @@ var NetworkCaptureModule = class {
    * @param operator - Node operator's public key
    */
   getNodeRegistrationAddress(operator) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("network_node"), operator.toBuffer()],
       PROGRAM_IDS.VAULT
     );
@@ -2293,7 +2862,7 @@ var NetworkCaptureModule = class {
    * @param proposalId - Proposal identifier
    */
   getVoteAddress(voter, proposalId) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("vote"), voter.toBuffer(), Buffer.from(proposalId)],
       PROGRAM_IDS.VAULT
     );
@@ -2304,7 +2873,7 @@ var NetworkCaptureModule = class {
    * @param dataHash - Hash of attested data
    */
   getAttestationAddress(attester, dataHash) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("attestation"), attester.toBuffer(), dataHash.slice(0, 32)],
       PROGRAM_IDS.VAULT
     );
@@ -2339,7 +2908,7 @@ var NetworkCaptureModule = class {
       [
         { pubkey: user, isSigner: true, isWritable: true },
         { pubkey: nodePda, isSigner: false, isWritable: true },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { nodeType, capabilities, bump }
     );
@@ -2377,7 +2946,7 @@ var NetworkCaptureModule = class {
         { pubkey: nodePda, isSigner: false, isWritable: true },
         { pubkey: votePda, isSigner: false, isWritable: true },
         { pubkey: vePositionPda, isSigner: false, isWritable: false },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { proposalId, vote, proof: Array.from(proof), bump }
     );
@@ -2411,7 +2980,7 @@ var NetworkCaptureModule = class {
         { pubkey: user, isSigner: true, isWritable: true },
         { pubkey: nodePda, isSigner: false, isWritable: true },
         { pubkey: attestationPda, isSigner: false, isWritable: true },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { dataHash: Array.from(dataHash), attestationType, bump }
     );
@@ -2469,9 +3038,9 @@ var NetworkCaptureModule = class {
     const accountInfo = await this.loop.connection.getAccountInfo(nodePda);
     if (!accountInfo) {
       return {
-        totalVotes: new import_anchor.BN(0),
-        totalAttestations: new import_anchor.BN(0),
-        participationRewards: new import_anchor.BN(0),
+        totalVotes: new import_anchor2.BN(0),
+        totalAttestations: new import_anchor2.BN(0),
+        participationRewards: new import_anchor2.BN(0),
         uptimePercentage: 0,
         currentStreak: 0,
         slashCount: 0
@@ -2485,7 +3054,7 @@ var NetworkCaptureModule = class {
   createInstruction(name, accounts, data) {
     const discriminator = Buffer.alloc(8);
     const dataBuffer = Buffer.from(JSON.stringify(data));
-    return new import_web3.TransactionInstruction({
+    return new import_web32.TransactionInstruction({
       keys: accounts,
       programId: PROGRAM_IDS.VAULT,
       data: Buffer.concat([discriminator, dataBuffer])
@@ -2493,9 +3062,9 @@ var NetworkCaptureModule = class {
   }
   deserializeNetworkStats(data) {
     return {
-      totalVotes: new import_anchor.BN(0),
-      totalAttestations: new import_anchor.BN(0),
-      participationRewards: new import_anchor.BN(0),
+      totalVotes: new import_anchor2.BN(0),
+      totalAttestations: new import_anchor2.BN(0),
+      participationRewards: new import_anchor2.BN(0),
       uptimePercentage: 0,
       currentStreak: 0,
       slashCount: 0
@@ -2515,7 +3084,7 @@ var SkillCaptureModule = class {
    * @param modelId - Model identifier
    */
   getBehaviorModelAddress(owner, modelId) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("behavior_model"), owner.toBuffer(), Buffer.from(modelId)],
       PROGRAM_IDS.VAULT
     );
@@ -2526,7 +3095,7 @@ var SkillCaptureModule = class {
    * @param licenseId - License identifier
    */
   getSkillLicenseAddress(licensor, licenseId) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("skill_license"), licensor.toBuffer(), Buffer.from(licenseId)],
       PROGRAM_IDS.VAULT
     );
@@ -2536,7 +3105,7 @@ var SkillCaptureModule = class {
    * @param owner - Owner's public key
    */
   getSkillStatsAddress(owner) {
-    return import_web3.PublicKey.findProgramAddressSync(
+    return import_web32.PublicKey.findProgramAddressSync(
       [Buffer.from("skill_stats"), owner.toBuffer()],
       PROGRAM_IDS.VAULT
     );
@@ -2574,7 +3143,7 @@ var SkillCaptureModule = class {
         { pubkey: user, isSigner: true, isWritable: true },
         { pubkey: modelPda, isSigner: false, isWritable: true },
         { pubkey: statsPda, isSigner: false, isWritable: true },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       { modelId, skillType, anonymizationLevel, bump }
     );
@@ -2621,7 +3190,7 @@ var SkillCaptureModule = class {
         { pubkey: licensePda, isSigner: false, isWritable: true },
         { pubkey: statsPda, isSigner: false, isWritable: true },
         { pubkey: import_spl_token.TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-        { pubkey: import_web3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: import_web32.SystemProgram.programId, isSigner: false, isWritable: false }
       ],
       {
         modelId,
@@ -2716,11 +3285,11 @@ var SkillCaptureModule = class {
     const accountInfo = await this.loop.connection.getAccountInfo(statsPda);
     if (!accountInfo) {
       return {
-        totalModels: new import_anchor.BN(0),
-        totalLicenses: new import_anchor.BN(0),
-        totalRevenue: new import_anchor.BN(0),
+        totalModels: new import_anchor2.BN(0),
+        totalLicenses: new import_anchor2.BN(0),
+        totalRevenue: new import_anchor2.BN(0),
         activeLicenses: 0,
-        avgLicensePrice: new import_anchor.BN(0),
+        avgLicensePrice: new import_anchor2.BN(0),
         topSkillType: 7 /* Custom */
       };
     }
@@ -2732,7 +3301,7 @@ var SkillCaptureModule = class {
   createInstruction(name, accounts, data) {
     const discriminator = Buffer.alloc(8);
     const dataBuffer = Buffer.from(JSON.stringify(data));
-    return new import_web3.TransactionInstruction({
+    return new import_web32.TransactionInstruction({
       keys: accounts,
       programId: PROGRAM_IDS.VAULT,
       data: Buffer.concat([discriminator, dataBuffer])
@@ -2740,11 +3309,11 @@ var SkillCaptureModule = class {
   }
   deserializeSkillStats(data) {
     return {
-      totalModels: new import_anchor.BN(0),
-      totalLicenses: new import_anchor.BN(0),
-      totalRevenue: new import_anchor.BN(0),
+      totalModels: new import_anchor2.BN(0),
+      totalLicenses: new import_anchor2.BN(0),
+      totalRevenue: new import_anchor2.BN(0),
       activeLicenses: 0,
-      avgLicensePrice: new import_anchor.BN(0),
+      avgLicensePrice: new import_anchor2.BN(0),
       topSkillType: 7 /* Custom */
     };
   }
@@ -3375,6 +3944,8 @@ var TEEIntegration = class {
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  AgentNotAuthorizedError,
+  AgentNotFoundError,
   AgentStatus,
   AgentType,
   AnonymizationLevel,
@@ -3383,6 +3954,7 @@ var TEEIntegration = class {
   AttestationType,
   AvpModule,
   CONSTANTS,
+  CaptureFailedError,
   CaptureType,
   ClaimStatus,
   ClaimType,
@@ -3393,11 +3965,17 @@ var TEEIntegration = class {
   DeviceType,
   EnergyCapture,
   EscrowStatus,
+  InsufficientBalanceError,
+  InsufficientFundsError,
   InsuranceCapture,
   IntroOutcome,
+  InvalidAmountError,
+  InvalidCaptureTypeError,
+  InvalidPublicKeyError,
   LiquidityCapture,
   LiquidityStrategy,
   Loop,
+  LoopError,
   LoopPDA,
   NetworkCaptureModule,
   NodeType,
@@ -3405,16 +3983,46 @@ var TEEIntegration = class {
   PROGRAM_IDS,
   ParaIntegration,
   PermissionLevel,
+  PolicyViolationError,
   PositionStatus,
+  ProofVerificationFailedError,
   ReclaimIntegration,
   ReferralCaptureModule,
   RiskTolerance,
+  SessionExpiredError,
   SkillCaptureModule,
   SkillType,
   SocialCapture,
   SquadsIntegration,
+  StackingNotMatureError,
+  StackingPositionNotFoundError,
   TEEIntegration,
   TaskStatus,
+  TransactionFailedError,
+  TransactionTimeoutError,
+  UnauthorizedError,
+  ValidationError,
+  VaultAlreadyExistsError,
   VaultModule,
-  VtpModule
+  VaultNotFoundError,
+  VtpModule,
+  formatCompact,
+  formatCred,
+  formatDuration,
+  formatOxo,
+  formatPercentage,
+  formatRelativeTime,
+  formatTimestamp,
+  shortenAddress,
+  sleep,
+  tryWithRetry,
+  validateAmount,
+  validateArray,
+  validateLockDuration,
+  validateNonNegativeAmount,
+  validatePercentage,
+  validatePositiveAmount,
+  validatePublicKey,
+  validateString,
+  withRetry
 });
