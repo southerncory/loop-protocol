@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
-declare_id!("4D2PnJ4txLTQAqcoURt5eUQHMM85QsGPdGBHdsineuWj");
+declare_id!("3mP7L31af6MV6FnqWG6E78JELNuizWDwBK3rC3g3WjSK");
 
 /// Loop Value Transfer Protocol (VTP)
 /// 
@@ -151,6 +151,7 @@ pub mod loop_vtp {
         amount: u64,
         release_conditions: Vec<ReleaseCondition>,
         expiry: i64,
+        escrow_id: u64,
         bump: u8,
     ) -> Result<()> {
         require!(amount > 0, VtpError::InvalidAmount);
@@ -241,7 +242,7 @@ pub mod loop_vtp {
                 ctx.accounts.fulfiller.key() == *arbiter
             }
             ReleaseCondition::TimeRelease { timestamp: _ } => {
-                Clock::get()?.unix_timestamp >= escrow.expiry
+                Clock::get().map(|c| c.unix_timestamp >= escrow.expiry).unwrap_or(false)
             }
             ReleaseCondition::OracleAttestation { oracle, data_hash: _ } => {
                 // Verify oracle signature (simplified)
@@ -596,7 +597,7 @@ pub struct BatchTransfer<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(amount: u64, release_conditions: Vec<ReleaseCondition>, expiry: i64, bump: u8)]
+#[instruction(amount: u64, release_conditions: Vec<ReleaseCondition>, expiry: i64, escrow_id: u64, bump: u8)]
 pub struct CreateEscrow<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
@@ -615,7 +616,7 @@ pub struct CreateEscrow<'info> {
             b"escrow",
             sender.key().as_ref(),
             recipient.key().as_ref(),
-            &Clock::get()?.unix_timestamp.to_le_bytes(),
+            &escrow_id.to_le_bytes(),
         ],
         bump,
     )]

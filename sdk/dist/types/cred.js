@@ -1,0 +1,4 @@
+/**
+ * Cred Types
+ */
+export {};

@@ -1,5 +1,5 @@
 {
-  "name": "@loop-protocol/sdk",
+  "name": "loop-protocol-ai-sdk",
   "version": "0.1.0",
   "description": "Loop Protocol SDK - Value capture infrastructure for AI agents",
   "main": "dist/index.js",

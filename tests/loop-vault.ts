@@ -2,11 +2,12 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
 import { 
-  TOKEN_PROGRAM_ID, 
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
   createMint, 
-  createAccount,
   mintTo,
-  getAccount 
+  getAccount,
+  getOrCreateAssociatedTokenAccount,
 } from "@solana/spl-token";
 import { expect } from "chai";
 import { LoopVault } from "../target/types/loop_vault";
@@ -43,13 +44,14 @@ describe("loop-vault", () => {
       6 // 6 decimals like USDC
     );
     
-    // Create user's Cred token account
-    userCredAccount = await createAccount(
+    // Create user's Cred token account using ATA
+    const userAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       userKeypair,
       credMint,
       userKeypair.publicKey
     );
+    userCredAccount = userAta.address;
     
     // Mint some Cred to user
     await mintTo(
@@ -67,14 +69,15 @@ describe("loop-vault", () => {
       program.programId
     );
     
-    // Create vault's Cred token account
-    vaultCredAccount = await createAccount(
+    // Create vault's Cred token account - PDA owner requires allowOwnerOffCurve
+    const vaultAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       userKeypair,
       credMint,
       vaultPda,
-      userKeypair // payer
+      true // allowOwnerOffCurve - critical for PDA owners
     );
+    vaultCredAccount = vaultAta.address;
   });
   
   it("initializes a vault", async () => {
@@ -227,10 +230,11 @@ describe("loop-vault agent permissions", () => {
     agentKeypair = Keypair.generate();
     
     // Airdrop SOL
-    await provider.connection.requestAirdrop(
+    const sig = await provider.connection.requestAirdrop(
       userKeypair.publicKey,
       2 * anchor.web3.LAMPORTS_PER_SOL
     );
+    await provider.connection.confirmTransaction(sig);
     
     // Derive vault PDA
     [vaultPda, vaultBump] = PublicKey.findProgramAddressSync(
@@ -266,6 +270,30 @@ describe("loop-vault agent permissions", () => {
     console.log("Set agent permission tx:", tx);
     
     // Verify permission was set (would need to fetch agent_permissions account)
+  });
+
+  it("revokes agent permissions", async () => {
+    // First grant capture permission
+    await program.methods
+      .setAgentPermission(agentKeypair.publicKey, 2)
+      .accounts({
+        owner: userKeypair.publicKey,
+        vault: vaultPda,
+      })
+      .signers([userKeypair])
+      .rpc();
+    
+    // Now revoke
+    const tx = await program.methods
+      .revokeAgentPermission(agentKeypair.publicKey)
+      .accounts({
+        owner: userKeypair.publicKey,
+        vault: vaultPda,
+      })
+      .signers([userKeypair])
+      .rpc();
+    
+    console.log("Revoke agent permission tx:", tx);
   });
   
   it("fails when unauthorized agent tries to capture", async () => {

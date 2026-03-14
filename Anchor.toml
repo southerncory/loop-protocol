@@ -1,24 +1,25 @@
 [toolchain]
+anchor_version = "0.32.1"
 
 [features]
 seeds = false
 skip-lint = false
 
 [programs.localnet]
-loop_vault = "76FgGQNTw9maaV82og6U33KMZw4FCw9yGJu4M75hJ3Z7"
-loop_cred = "FHVp7WrnUZq69aNZgYw2YNmitSdj8UCwoJ8C2A1M98JA"
-loop_oxo = "3qxTuF17rTdGFECPimRWu51uUycSwAL4ebd7w9s2xx4z"
-loop_vtp = "4D2PnJ4txLTQAqcoURt5eUQHMM85QsGPdGBHdsineuWj"
-loop_avp = "H5c9xfPYcx6EtC8hpThshARtUR7tq1NfMJVrTx8z9Jcx"
-loop_shopping = "D9EVmPZXMwqL3v9ebdpanyrJi3i1ZdfNRJo2MsZkd7qJ"
+loop_vault = "JQgKVw8JxAfEdNjpNgDuNCJCenF3cKxQHL7Hg7TwLnk"
+loop_cred = "3FVxLJNThK8aqtRb65atTmkfJ2E1a2x5PfeSDEBzhetd"
+loop_oxo = "5MPdaWr8CJCUvWigHSRy5xkvoTBKa1KfJHYRdKdMZ4t7"
+loop_vtp = "3mP7L31af6MV6FnqWG6E78JELNuizWDwBK3rC3g3WjSK"
+loop_avp = "FE3ZJBqVcqP6ar2pnndMghgNb3pi4mrjhVoAS7x4BVCA"
+loop_shopping = "FSqRkH7nkGHP3VpHwFE667PVAfLKfSGaPMgTrXpJZJoJ"
 
 [programs.devnet]
-loop_vault = "76FgGQNTw9maaV82og6U33KMZw4FCw9yGJu4M75hJ3Z7"
-loop_cred = "FHVp7WrnUZq69aNZgYw2YNmitSdj8UCwoJ8C2A1M98JA"
-loop_oxo = "3qxTuF17rTdGFECPimRWu51uUycSwAL4ebd7w9s2xx4z"
-loop_vtp = "4D2PnJ4txLTQAqcoURt5eUQHMM85QsGPdGBHdsineuWj"
-loop_avp = "H5c9xfPYcx6EtC8hpThshARtUR7tq1NfMJVrTx8z9Jcx"
-loop_shopping = "D9EVmPZXMwqL3v9ebdpanyrJi3i1ZdfNRJo2MsZkd7qJ"
+loop_vault = "JQgKVw8JxAfEdNjpNgDuNCJCenF3cKxQHL7Hg7TwLnk"
+loop_cred = "3FVxLJNThK8aqtRb65atTmkfJ2E1a2x5PfeSDEBzhetd"
+loop_oxo = "5MPdaWr8CJCUvWigHSRy5xkvoTBKa1KfJHYRdKdMZ4t7"
+loop_vtp = "3mP7L31af6MV6FnqWG6E78JELNuizWDwBK3rC3g3WjSK"
+loop_avp = "FE3ZJBqVcqP6ar2pnndMghgNb3pi4mrjhVoAS7x4BVCA"
+loop_shopping = "FSqRkH7nkGHP3VpHwFE667PVAfLKfSGaPMgTrXpJZJoJ"
 
 [registry]
 url = "https://api.apr.dev"

@@ -4,9 +4,9 @@ import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
 import { 
   TOKEN_PROGRAM_ID, 
   createMint, 
-  createAccount,
   mintTo,
-  getAccount 
+  getAccount,
+  getOrCreateAssociatedTokenAccount,
 } from "@solana/spl-token";
 import { expect } from "chai";
 import { LoopOxo } from "../target/types/loop_oxo";
@@ -81,12 +81,13 @@ describe("loop-oxo", () => {
       );
       
       // Create user's OXO token account
-      userOxoAccount = await createAccount(
+      const userOxoAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         provider.wallet.payer,
         oxoMint,
         userKeypair.publicKey
       );
+      userOxoAccount = userOxoAta.address;
       
       // Mint OXO to user
       await mintTo(
@@ -98,13 +99,15 @@ describe("loop-oxo", () => {
         10_000_000_000 // 10,000 OXO
       );
       
-      // Create protocol's OXO token account
-      protocolOxoAccount = await createAccount(
+      // Create protocol's OXO token account - PDA owner
+      const protocolOxoAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         provider.wallet.payer,
         oxoMint,
-        configPda
+        configPda,
+        true // allowOwnerOffCurve - critical for PDA owners
       );
+      protocolOxoAccount = protocolOxoAta.address;
       
       // Derive vePosition PDA
       [vePositionPda, vePositionBump] = PublicKey.findProgramAddressSync(
@@ -203,12 +206,13 @@ describe("loop-oxo", () => {
       );
       
       // Create creator's OXO account
-      creatorOxoAccount = await createAccount(
+      const creatorOxoAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         provider.wallet.payer,
         oxoMint,
         creatorKeypair.publicKey
       );
+      creatorOxoAccount = creatorOxoAta.address;
       
       // Mint OXO to creator (enough for creation fee)
       await mintTo(
@@ -221,12 +225,14 @@ describe("loop-oxo", () => {
       );
       
       // Create treasury OXO account
-      treasuryOxoAccount = await createAccount(
+      const treasuryOxoAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         provider.wallet.payer,
         oxoMint,
-        treasuryAccount
+        treasuryAccount,
+        true // allowOwnerOffCurve in case treasury is a PDA
       );
+      treasuryOxoAccount = treasuryOxoAta.address;
       
       // Create agent mint
       agentMint = await createMint(
@@ -286,12 +292,13 @@ describe("loop-oxo", () => {
         anchor.web3.LAMPORTS_PER_SOL
       );
       
-      const buyerOxoAccount = await createAccount(
+      const buyerOxoAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         provider.wallet.payer,
         oxoMint,
         buyerKeypair.publicKey
       );
+      const buyerOxoAccount = buyerOxoAta.address;
       
       await mintTo(
         provider.connection,
@@ -302,19 +309,23 @@ describe("loop-oxo", () => {
         1_000_000_000 // 1000 OXO
       );
       
-      const buyerAgentAccount = await createAccount(
+      const buyerAgentAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         provider.wallet.payer,
         agentMint,
         buyerKeypair.publicKey
       );
+      const buyerAgentAccount = buyerAgentAta.address;
       
-      const curveOxoAccount = await createAccount(
+      // Curve OXO account - PDA owner
+      const curveOxoAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         provider.wallet.payer,
         oxoMint,
-        bondingCurvePda
+        bondingCurvePda,
+        true // allowOwnerOffCurve - critical for PDA owners
       );
+      const curveOxoAccount = curveOxoAta.address;
       
       const oxoToBuy = new anchor.BN(100_000_000); // 100 OXO
       

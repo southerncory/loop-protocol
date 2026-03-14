@@ -1,0 +1,24 @@
+{
+  "title": "Loop Protocol",
+  "description": "The Economic Layer for the Agentic Era",
+  "author": "Loop Protocol Team",
+  "language": "en",
+  "gitbook": ">=3.0.0",
+  "plugins": [
+    "theme-default"
+  ],
+  "pluginsConfig": {},
+  "structure": {
+    "readme": "README.md",
+    "summary": "SUMMARY.md"
+  },
+  "links": {
+    "sidebar": {
+      "Website": "https://looplocal.io",
+      "GitHub": "https://github.com/southerncory/loop-protocol"
+    }
+  },
+  "styles": {
+    "website": "styles/website.css"
+  }
+}

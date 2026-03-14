@@ -4,9 +4,9 @@ import { PublicKey, Keypair, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web
 import { 
   TOKEN_PROGRAM_ID, 
   createMint, 
-  createAccount,
   mintTo,
   getAccount,
+  getOrCreateAssociatedTokenAccount,
 } from "@solana/spl-token";
 import { expect } from "chai";
 import { LoopAvp } from "../target/types/loop_avp";
@@ -89,12 +89,13 @@ describe("loop-avp", () => {
     );
     
     // Create creator OXO account with stake
-    creatorOxoAccount = await createAccount(
+    const creatorOxoAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       serviceCreator,
       oxoMint,
       serviceCreator.publicKey
     );
+    creatorOxoAccount = creatorOxoAta.address;
     
     // Mint enough OXO for stake
     await mintTo(
@@ -271,12 +272,13 @@ describe("loop-avp", () => {
       await airdrop(poorCreator.publicKey);
       
       // Create account with insufficient OXO
-      const poorOxoAccount = await createAccount(
+      const poorOxoAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         poorCreator,
         oxoMint,
         poorCreator.publicKey
       );
+      const poorOxoAccount = poorOxoAta.address;
       
       await mintTo(
         provider.connection,

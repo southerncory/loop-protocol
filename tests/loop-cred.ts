@@ -4,10 +4,10 @@ import { PublicKey, Keypair, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web
 import { 
   TOKEN_PROGRAM_ID, 
   createMint, 
-  createAccount,
   mintTo,
   getAccount,
   getMint,
+  getOrCreateAssociatedTokenAccount,
 } from "@solana/spl-token";
 import { expect } from "chai";
 import { LoopCred } from "../target/types/loop_cred";
@@ -95,57 +95,66 @@ describe("loop-cred", () => {
       6
     );
     
-    // Create reserve vault (USDC backing)
-    reserveVault = await createAccount(
+    // Create reserve vault (USDC backing) - PDA owner requires allowOwnerOffCurve
+    const reserveAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       authority,
       usdcMint,
-      credConfigPda
+      credConfigPda,
+      true // allowOwnerOffCurve - critical for PDA owners
     );
+    reserveVault = reserveAta.address;
     
-    // Create user token accounts
-    user1UsdcAccount = await createAccount(
+    // Create user token accounts using ATAs
+    const user1UsdcAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       user1,
       usdcMint,
       user1.publicKey
     );
+    user1UsdcAccount = user1UsdcAta.address;
     
-    user1CredAccount = await createAccount(
+    const user1CredAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       user1,
       credMint,
       user1.publicKey
     );
+    user1CredAccount = user1CredAta.address;
     
-    user2UsdcAccount = await createAccount(
+    const user2UsdcAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       user2,
       usdcMint,
       user2.publicKey
     );
+    user2UsdcAccount = user2UsdcAta.address;
     
-    user2CredAccount = await createAccount(
+    const user2CredAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       user2,
       credMint,
       user2.publicKey
     );
+    user2CredAccount = user2CredAta.address;
     
     // Capture module accounts
-    captureModuleUsdcAccount = await createAccount(
+    const captureModuleUsdcAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       captureModule,
       usdcMint,
       captureModule.publicKey
     );
+    captureModuleUsdcAccount = captureModuleUsdcAta.address;
     
-    destinationCredAccount = await createAccount(
+    const destCredAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       captureModule,
       credMint,
-      Keypair.generate().publicKey // Some destination vault
+      Keypair.generate().publicKey,
+      true // allowOwnerOffCurve - destination might be a PDA
     );
+    destinationCredAccount = destCredAta.address;
     
     // Mint USDC to users
     await mintTo(
@@ -635,12 +644,13 @@ describe("loop-cred", () => {
       const unauthorized = Keypair.generate();
       await airdrop(unauthorized.publicKey);
       
-      const unauthorizedUsdc = await createAccount(
+      const unauthorizedUsdcAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         unauthorized,
         usdcMint,
         unauthorized.publicKey
       );
+      const unauthorizedUsdc = unauthorizedUsdcAta.address;
       
       await mintTo(
         provider.connection,

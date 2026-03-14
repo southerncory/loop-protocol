@@ -1,0 +1,949 @@
+
+<!DOCTYPE HTML>
+<html lang="en" >
+    <head>
+        <meta charset="UTF-8">
+        <title>Self-Custody and Control · Loop Protocol</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="HonKit 6.1.6">
+        <meta name="author" content="Loop Protocol Team">
+        
+        
+    
+    <link rel="stylesheet" href="../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../gitbook/@honkit/honkit-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/@honkit/honkit-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+        <link rel="stylesheet" href="../styles/website.css">
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="../architecture/principles.html" />
+    
+    
+    <link rel="prev" href="compounding.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book honkit-cloak">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+    
+        
+        <li>
+            <a href="https://looplocal.io" target="_blank" class="custom-link">Website</a>
+        </li>
+    
+        
+        <li>
+            <a href="https://github.com/southerncory/loop-protocol" target="_blank" class="custom-link">GitHub</a>
+        </li>
+    
+    
+
+    
+    <li class="divider"></li>
+    
+
+    
+        
+        <li class="header">Introduction</li>
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../">
+            
+                <a href="../">
+            
+                    
+                    Overview
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" data-path="../introduction/abstract.html">
+            
+                <a href="../introduction/abstract.html">
+            
+                    
+                    Abstract
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">The Problem</li>
+        
+        
+    
+        <li class="chapter " data-level="2.1" data-path="../problem/extraction.html">
+            
+                <a href="../problem/extraction.html">
+            
+                    
+                    Extraction Everywhere
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="2.2" data-path="../problem/scale.html">
+            
+                <a href="../problem/scale.html">
+            
+                    
+                    The Scale of Extraction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="2.3" data-path="../problem/generational.html">
+            
+                <a href="../problem/generational.html">
+            
+                    
+                    Long-Term Wealth Impact
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">The Opportunity</li>
+        
+        
+    
+        <li class="chapter " data-level="3.1" data-path="../opportunity/agentic-era.html">
+            
+                <a href="../opportunity/agentic-era.html">
+            
+                    
+                    The Agentic Era
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="3.2" data-path="../opportunity/infrastructure.html">
+            
+                <a href="../opportunity/infrastructure.html">
+            
+                    
+                    Why Agents Need Infrastructure
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="3.3" data-path="../opportunity/realignment.html">
+            
+                <a href="../opportunity/realignment.html">
+            
+                    
+                    Realigning Incentives
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">The Vision</li>
+        
+        
+    
+        <li class="chapter " data-level="4.1" data-path="overview.html">
+            
+                <a href="overview.html">
+            
+                    
+                    Overview
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="4.2" data-path="capture.html">
+            
+                <a href="capture.html">
+            
+                    
+                    Value Capture
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="4.3" data-path="compounding.html">
+            
+                <a href="compounding.html">
+            
+                    
+                    Value Compounding
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="4.4" data-path="inheritance.html">
+            
+                <a href="inheritance.html">
+            
+                    
+                    Self-Custody and Control
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Protocol Architecture</li>
+        
+        
+    
+        <li class="chapter " data-level="5.1" data-path="../architecture/principles.html">
+            
+                <a href="../architecture/principles.html">
+            
+                    
+                    Design Principles
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="5.2" data-path="../architecture/stack.html">
+            
+                <a href="../architecture/stack.html">
+            
+                    
+                    Protocol Stack
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="5.3" data-path="../architecture/avp.html">
+            
+                <a href="../architecture/avp.html">
+            
+                    
+                    Agent Value Protocol (AVP)
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="5.4" data-path="../architecture/vtp.html">
+            
+                <a href="../architecture/vtp.html">
+            
+                    
+                    Value Transfer Protocol (VTP)
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="5.5" data-path="../architecture/capture-modules.html">
+            
+                <a href="../architecture/capture-modules.html">
+            
+                    
+                    Capture Modules
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Token Economics</li>
+        
+        
+    
+        <li class="chapter " data-level="6.1" data-path="../tokenomics/dual-token.html">
+            
+                <a href="../tokenomics/dual-token.html">
+            
+                    
+                    Dual-Token Model
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="6.2" data-path="../tokenomics/cred.html">
+            
+                <a href="../tokenomics/cred.html">
+            
+                    
+                    Cred (Stable Value)
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="6.3" data-path="../tokenomics/oxo.html">
+            
+                <a href="../tokenomics/oxo.html">
+            
+                    
+                    OXO (Protocol Equity)
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="6.4" data-path="../tokenomics/flows.html">
+            
+                <a href="../tokenomics/flows.html">
+            
+                    
+                    Value Flows
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="6.5" data-path="../tokenomics/staking.html">
+            
+                <a href="../tokenomics/staking.html">
+            
+                    
+                    Staking Mechanics
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Agent Ecosystem</li>
+        
+        
+    
+        <li class="chapter " data-level="7.1" data-path="../agents/personal.html">
+            
+                <a href="../agents/personal.html">
+            
+                    
+                    Personal Agents
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="7.2" data-path="../agents/service.html">
+            
+                <a href="../agents/service.html">
+            
+                    
+                    Service Agents
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="7.3" data-path="../agents/interop.html">
+            
+                <a href="../agents/interop.html">
+            
+                    
+                    Agent Interoperability
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Comparisons</li>
+        
+        
+    
+        <li class="chapter " data-level="8.1" data-path="../comparisons/tradfi.html">
+            
+                <a href="../comparisons/tradfi.html">
+            
+                    
+                    vs Traditional Finance
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="8.2" data-path="../comparisons/crypto.html">
+            
+                <a href="../comparisons/crypto.html">
+            
+                    
+                    vs Existing Crypto
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="8.3" data-path="../comparisons/virtuals.html">
+            
+                <a href="../comparisons/virtuals.html">
+            
+                    
+                    vs Virtuals Protocol
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Roadmap</li>
+        
+        
+    
+        <li class="chapter " data-level="9.1" data-path="../roadmap/phases.html">
+            
+                <a href="../roadmap/phases.html">
+            
+                    
+                    Development Phases
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Governance</li>
+        
+        
+    
+        <li class="chapter " data-level="10.1" data-path="../governance/protocol.html">
+            
+                <a href="../governance/protocol.html">
+            
+                    
+                    Protocol Governance
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="10.2" data-path="../governance/decentralization.html">
+            
+                <a href="../governance/decentralization.html">
+            
+                    
+                    Progressive Decentralization
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Technical Reference</li>
+        
+        
+    
+        <li class="chapter " data-level="11.1" data-path="../reference/glossary.html">
+            
+                <a href="../reference/glossary.html">
+            
+                    
+                    Glossary
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="11.2" data-path="../reference/programs.html">
+            
+                <a href="../reference/programs.html">
+            
+                    
+                    Program IDs
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="11.3" data-path="../reference/sdk.html">
+            
+                <a href="../reference/sdk.html">
+            
+                    
+                    SDK Reference
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://github.com/honkit/honkit" target="blank" class="gitbook-link">
+            Published with HonKit
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href=".." >Self-Custody and Control</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="self-custody-and-control">Self-Custody and Control</h1>
+<p>Loop Protocol is infrastructure, not a custodian. You control your funds, your data, and your agent's behavior.</p>
+<h2 id="what-self-custody-means">What Self-Custody Means</h2>
+<p><strong>Your Keys</strong>: Your vault is a smart contract controlled by your wallet. Loop cannot access it. Only you can authorize transactions.</p>
+<p><strong>Your Rules</strong>: You configure how your agent operates. Spending limits, stacking preferences, autonomy levels. The protocol enforces your preferences, not ours.</p>
+<p><strong>Your Exit</strong>: You can extract all your funds at any time. A 5% fee applies, but there's no lock-in, no approval process, no waiting period beyond transaction confirmation.</p>
+<h2 id="why-self-custody-matters">Why Self-Custody Matters</h2>
+<p>Traditional financial services require trusting institutions with your funds:</p>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Traditional Finance</th>
+<th>Loop</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Account freeze</td>
+<td>Bank/government can freeze</td>
+<td>Only you control access</td>
+</tr>
+<tr>
+<td>Terms changes</td>
+<td>Institution can change unilaterally</td>
+<td>Code is law, governance for changes</td>
+</tr>
+<tr>
+<td>Data access</td>
+<td>Institution sees everything</td>
+<td>Your data stays with you</td>
+</tr>
+<tr>
+<td>Custody risk</td>
+<td>Institution could fail</td>
+<td>Self-custodied, no counterparty</td>
+</tr>
+</tbody>
+</table>
+<p>Self-custody eliminates these risks. The tradeoff is responsibility: you manage your own keys.</p>
+<h2 id="vault-ownership">Vault Ownership</h2>
+<p>Your vault is a Solana account derived from your wallet:</p>
+<pre><code class="lang-typescript"><span class="hljs-comment">// Vault PDA derivation</span>
+<span class="hljs-keyword">const</span> [vaultPda] = <span class="hljs-title class_">PublicKey</span>.<span class="hljs-title function_">findProgramAddress</span>(
+  [<span class="hljs-title class_">Buffer</span>.<span class="hljs-title function_">from</span>(<span class="hljs-string">'vault'</span>), userWallet.<span class="hljs-title function_">toBuffer</span>()],
+  <span class="hljs-variable constant_">VAULT_PROGRAM_ID</span>
+);
+</code></pre>
+<p>This means:</p>
+<ul>
+<li>One vault per wallet</li>
+<li>Vault address is deterministic from your wallet</li>
+<li>No one else can create or control your vault</li>
+<li>Vault persists as long as Solana exists</li>
+</ul>
+<h2 id="agent-authorization">Agent Authorization</h2>
+<p>Your agent operates on your behalf but with constrained authority:</p>
+<p><strong>What Agents Can Do</strong>:</p>
+<ul>
+<li>Submit capture proofs</li>
+<li>Execute stacking within your preferences</li>
+<li>Transfer funds you've authorized</li>
+<li>Manage positions according to your rules</li>
+</ul>
+<p><strong>What Agents Cannot Do</strong>:</p>
+<ul>
+<li>Extract funds without explicit authorization</li>
+<li>Change your core preferences</li>
+<li>Access funds beyond configured limits</li>
+<li>Act outside their registered capabilities</li>
+</ul>
+<p>You grant authority; you can revoke it.</p>
+<h2 id="autonomy-levels">Autonomy Levels</h2>
+<p>Configure how independently your agent operates:</p>
+<p><strong>Supervised Mode</strong>: Agent proposes actions. You approve each one.</p>
+<pre><code class="lang-typescript"><span class="hljs-keyword">await</span> agent.<span class="hljs-title function_">setAutonomy</span>({ <span class="hljs-attr">level</span>: <span class="hljs-string">'supervised'</span> });
+</code></pre>
+<p><strong>Guided Mode</strong> (default): Agent acts within limits. Notifications for significant events.</p>
+<pre><code class="lang-typescript"><span class="hljs-keyword">await</span> agent.<span class="hljs-title function_">setAutonomy</span>({
+  <span class="hljs-attr">level</span>: <span class="hljs-string">'guided'</span>,
+  <span class="hljs-attr">dailyLimit</span>: <span class="hljs-number">25_000000</span>,  <span class="hljs-comment">// $25/day</span>
+  <span class="hljs-attr">notifyOn</span>: [<span class="hljs-string">'large_capture'</span>, <span class="hljs-string">'stack_maturity'</span>]
+});
+</code></pre>
+<p><strong>Autonomous Mode</strong>: Agent acts freely. Notifications for critical events only.</p>
+<pre><code class="lang-typescript"><span class="hljs-keyword">await</span> agent.<span class="hljs-title function_">setAutonomy</span>({ <span class="hljs-attr">level</span>: <span class="hljs-string">'autonomous'</span> });
+</code></pre>
+<h2 id="security-model">Security Model</h2>
+<h3 id="key-security">Key Security</h3>
+<p>Your wallet's private key is the ultimate authority. Protect it accordingly:</p>
+<ul>
+<li>Use hardware wallets for significant holdings</li>
+<li>Maintain secure backups</li>
+<li>Never share your seed phrase</li>
+</ul>
+<h3 id="agent-compromise">Agent Compromise</h3>
+<p>If your agent is compromised:</p>
+<ol>
+<li>Revoke agent authorization from your wallet</li>
+<li>Register a new agent</li>
+<li>Continue operating with new agent</li>
+</ol>
+<p>Your vault funds remain safe because the agent can't extract without your wallet signature.</p>
+<h3 id="smart-contract-risk">Smart Contract Risk</h3>
+<p>Loop programs are:</p>
+<ul>
+<li>Open source and auditable</li>
+<li>Reviewed before mainnet launch</li>
+<li>Upgradeable through governance (with timelock)</li>
+<li>Covered by bug bounty program</li>
+</ul>
+<p>No smart contract is perfectly safe. Use amounts you can afford to risk.</p>
+<h2 id="additional-features">Additional Features</h2>
+<h3 id="delegation">Delegation</h3>
+<p>Grant limited access to trusted parties:</p>
+<pre><code class="lang-typescript"><span class="hljs-keyword">await</span> loop.<span class="hljs-property">vault</span>.<span class="hljs-title function_">addDelegate</span>({
+  <span class="hljs-attr">delegate</span>: trustedWallet,
+  <span class="hljs-attr">permissions</span>: [<span class="hljs-string">'view'</span>, <span class="hljs-string">'capture'</span>],  <span class="hljs-comment">// but not 'extract'</span>
+  <span class="hljs-attr">expiry</span>: <span class="hljs-title class_">Date</span>.<span class="hljs-title function_">now</span>() + <span class="hljs-number">30</span> * <span class="hljs-number">24</span> * <span class="hljs-number">60</span> * <span class="hljs-number">60</span> * <span class="hljs-number">1000</span>
+});
+</code></pre>
+<p>Useful for:</p>
+<ul>
+<li>Trusted family members monitoring your vault</li>
+<li>Service providers managing specific functions</li>
+<li>Time-limited access for specific purposes</li>
+</ul>
+<h3 id="inheritance-settings">Inheritance Settings</h3>
+<p>Optionally configure vault transfer on death:</p>
+<pre><code class="lang-typescript"><span class="hljs-keyword">await</span> loop.<span class="hljs-property">vault</span>.<span class="hljs-title function_">setHeir</span>({
+  <span class="hljs-attr">heir</span>: heirWallet,
+  <span class="hljs-attr">conditions</span>: {
+    <span class="hljs-attr">proofType</span>: <span class="hljs-string">'death_certificate'</span>,
+    <span class="hljs-attr">waitingPeriod</span>: <span class="hljs-number">30</span> * <span class="hljs-number">24</span> * <span class="hljs-number">60</span> * <span class="hljs-number">60</span>,  <span class="hljs-comment">// 30 days</span>
+    <span class="hljs-attr">contestWindow</span>: <span class="hljs-literal">true</span>
+  }
+});
+</code></pre>
+<p>This is entirely optional. Most users may never configure it. For those who want estate planning capabilities, the option exists.</p>
+<h3 id="recovery-options">Recovery Options</h3>
+<p>If you lose access to your wallet:</p>
+<p><strong>Backup Seed</strong>: Restore from your seed phrase (standard wallet recovery)</p>
+<p><strong>Social Recovery</strong> (planned): Designate guardians who can collectively authorize recovery</p>
+<p><strong>Time-Locked Recovery</strong> (planned): Pre-authorize a backup wallet that can claim access after extended inactivity</p>
+<h2 id="the-tradeoff">The Tradeoff</h2>
+<p>Self-custody means self-responsibility:</p>
+<table>
+<thead>
+<tr>
+<th>Benefit</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No one can freeze your funds</td>
+<td>You must protect your keys</td>
+</tr>
+<tr>
+<td>No institutional counterparty risk</td>
+<td>You bear smart contract risk</td>
+</tr>
+<tr>
+<td>Full control over your assets</td>
+<td>No customer support to reverse mistakes</td>
+</tr>
+<tr>
+<td>Privacy from institutions</td>
+<td>You manage your own security</td>
+</tr>
+</tbody>
+</table>
+<p>For many people, this tradeoff is worthwhile. For others, traditional custodied services may be more appropriate. Loop is built for those who value sovereignty over convenience.</p>
+<p><a href="../architecture/principles.html">Continue to: Protocol Architecture →</a></p>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="compounding.html" class="navigation navigation-prev " aria-label="Previous page: Value Compounding">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="../architecture/principles.html" class="navigation navigation-next " aria-label="Next page: Design Principles">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Self-Custody and Control","level":"4.4","depth":1,"next":{"title":"Design Principles","level":"5.1","depth":1,"path":"architecture/principles.md","ref":"architecture/principles.md","articles":[]},"previous":{"title":"Value Compounding","level":"4.3","depth":1,"path":"vision/compounding.md","ref":"vision/compounding.md","articles":[]},"dir":"ltr"},"config":{"plugins":["theme-default"],"styles":{"website":"styles/website.css"},"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"theme":"default","author":"Loop Protocol Team","pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56},"embedFonts":false},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"variables":{},"title":"Loop Protocol","language":"en","links":{"sidebar":{"Website":"https://looplocal.io","GitHub":"https://github.com/southerncory/loop-protocol"}},"gitbook":">=3.0.0","description":"The Economic Layer for the Agentic Era"},"file":{"path":"vision/inheritance.md","mtime":"2026-03-12T14:29:54.080Z","type":"markdown"},"gitbook":{"version":"6.1.6","time":"2026-03-12T14:39:38.519Z"},"basePath":"..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <noscript>
+        <style>
+            .honkit-cloak {
+                display: block !important;
+            }
+        </style>
+    </noscript>
+    <script>
+        // Restore sidebar state as critical path for prevent layout shift
+        function __init__getSidebarState(defaultValue){
+            var baseKey = "";
+            var key = baseKey + ":sidebar";
+            try {
+                var value = localStorage[key];
+                if (value === undefined) {
+                    return defaultValue;
+                }
+                var parsed = JSON.parse(value);
+                return parsed == null ? defaultValue : parsed;
+            } catch (e) {
+                return defaultValue;
+            }
+        }
+        function __init__restoreLastSidebarState() {
+            var isMobile = window.matchMedia("(max-width: 600px)").matches;
+            if (isMobile) {
+                // Init last state if not mobile
+                return;
+            }
+            var sidebarState = __init__getSidebarState(true);
+            var book = document.querySelector(".book");
+            // Show sidebar if it enabled
+            if (sidebarState && book) {
+                book.classList.add("without-animation", "with-summary");
+            }
+        }
+
+        try {
+            __init__restoreLastSidebarState();
+        } finally {
+            var book = document.querySelector(".book");
+            book.classList.remove("honkit-cloak");
+        }
+    </script>
+    <script src="../gitbook/gitbook.js"></script>
+    <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../gitbook/@honkit/honkit-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+

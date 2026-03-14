@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer, Mint, MintTo, Burn};
 
-declare_id!("FHVp7WrnUZq69aNZgYw2YNmitSdj8UCwoJ8C2A1M98JA");
+declare_id!("3FVxLJNThK8aqtRb65atTmkfJ2E1a2x5PfeSDEBzhetd");
 
 /// Loop Cred Program
 /// 

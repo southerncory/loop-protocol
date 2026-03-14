@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer, Mint, MintTo, Burn};
 
-declare_id!("3qxTuF17rTdGFECPimRWu51uUycSwAL4ebd7w9s2xx4z");
+declare_id!("5MPdaWr8CJCUvWigHSRy5xkvoTBKa1KfJHYRdKdMZ4t7");
 
 /// Loop OXO Program
 /// 
@@ -310,6 +310,9 @@ pub mod loop_oxo {
         curve.token_supply = 0;
         curve.graduated = false;
         curve.created_at = Clock::get()?.unix_timestamp;
+        curve.graduated_at = 0;
+        curve.lp_lock_until = 0;
+        curve.lp_tokens_locked = 0;
         curve.bump = bump;
         
         // Increment agent count
@@ -465,6 +468,86 @@ pub mod loop_oxo {
             agent_mint: curve.agent_mint,
             tokens_sold: token_amount,
             oxo_received: oxo_after_fee,
+        });
+        
+        Ok(())
+    }
+
+    /// Graduate agent token - locks LP for 10 years
+    /// Called after bonding curve reaches 25k OXO threshold
+    /// Creates liquidity pool and locks the LP tokens
+    pub fn graduate_agent_token(
+        ctx: Context<GraduateAgentToken>,
+    ) -> Result<()> {
+        let curve = &ctx.accounts.bonding_curve;
+        
+        // Verify graduation threshold reached
+        require!(curve.oxo_reserve >= GRADUATION_THRESHOLD, OxoError::BelowGraduationThreshold);
+        require!(!curve.graduated, OxoError::AlreadyGraduated);
+        
+        let now = Clock::get()?.unix_timestamp;
+        
+        // LP lock period: 10 years (in seconds)
+        const LP_LOCK_YEARS: i64 = 10;
+        const SECONDS_PER_YEAR: i64 = 31_536_000;
+        let lp_lock_until = now.checked_add(LP_LOCK_YEARS * SECONDS_PER_YEAR)
+            .ok_or(OxoError::Overflow)?;
+        
+        // Calculate LP tokens to create
+        // In production: This would CPI to Raydium to create AMM pool
+        // For now: We record the graduation and simulate LP token amount
+        // LP tokens = sqrt(oxo_reserve * token_supply) as a simple formula
+        let lp_tokens = integer_sqrt(
+            (curve.oxo_reserve as u128)
+                .checked_mul(curve.token_supply as u128)
+                .ok_or(OxoError::Overflow)?
+        );
+        
+        // Update curve state
+        let curve = &mut ctx.accounts.bonding_curve;
+        curve.graduated = true;
+        curve.graduated_at = now;
+        curve.lp_lock_until = lp_lock_until;
+        curve.lp_tokens_locked = lp_tokens as u64;
+        
+        emit!(AgentTokenGraduated {
+            agent_mint: curve.agent_mint,
+            creator: curve.creator,
+            oxo_reserve: curve.oxo_reserve,
+            token_supply: curve.token_supply,
+            lp_tokens_locked: curve.lp_tokens_locked,
+            lp_lock_until: curve.lp_lock_until,
+            graduated_at: curve.graduated_at,
+        });
+        
+        Ok(())
+    }
+
+    /// Claim unlocked LP tokens after 10 year lock period
+    pub fn claim_graduated_lp(
+        ctx: Context<ClaimGraduatedLp>,
+    ) -> Result<()> {
+        let curve = &ctx.accounts.bonding_curve;
+        let now = Clock::get()?.unix_timestamp;
+        
+        require!(curve.graduated, OxoError::NotGraduated);
+        require!(now >= curve.lp_lock_until, OxoError::LpStillLocked);
+        require!(curve.lp_tokens_locked > 0, OxoError::NoLpToClaim);
+        require!(curve.creator == ctx.accounts.creator.key(), OxoError::Unauthorized);
+        
+        let lp_amount = curve.lp_tokens_locked;
+        
+        // Update state
+        let curve = &mut ctx.accounts.bonding_curve;
+        curve.lp_tokens_locked = 0;
+        
+        // In production: Transfer actual LP tokens to creator
+        // For now: Just emit event
+        
+        emit!(LpTokensClaimed {
+            agent_mint: curve.agent_mint,
+            creator: ctx.accounts.creator.key(),
+            lp_amount,
         });
         
         Ok(())
@@ -821,6 +904,39 @@ pub struct SellAgentToken<'info> {
 }
 
 #[derive(Accounts)]
+pub struct GraduateAgentToken<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    
+    #[account(
+        mut,
+        seeds = [b"bonding_curve", agent_mint.key().as_ref()],
+        bump = bonding_curve.bump,
+    )]
+    pub bonding_curve: Account<'info, BondingCurve>,
+    
+    /// CHECK: Just reading the mint key
+    pub agent_mint: AccountInfo<'info>,
+}
+
+#[derive(Accounts)]
+pub struct ClaimGraduatedLp<'info> {
+    #[account(mut)]
+    pub creator: Signer<'info>,
+    
+    #[account(
+        mut,
+        seeds = [b"bonding_curve", agent_mint.key().as_ref()],
+        bump = bonding_curve.bump,
+        constraint = bonding_curve.creator == creator.key() @ OxoError::Unauthorized,
+    )]
+    pub bonding_curve: Account<'info, BondingCurve>,
+    
+    /// CHECK: Just reading the mint key
+    pub agent_mint: AccountInfo<'info>,
+}
+
+#[derive(Accounts)]
 pub struct DepositFees<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -877,6 +993,9 @@ pub struct BondingCurve {
     pub token_supply: u64,
     pub graduated: bool,
     pub created_at: i64,
+    pub graduated_at: i64,         // Timestamp when graduated (0 if not graduated)
+    pub lp_lock_until: i64,        // LP locked until this time (10 years post-graduation)
+    pub lp_tokens_locked: u64,     // Amount of LP tokens locked
     pub bump: u8,
 }
 
@@ -955,6 +1074,24 @@ pub struct AgentTokenSold {
     pub oxo_received: u64,
 }
 
+#[event]
+pub struct AgentTokenGraduated {
+    pub agent_mint: Pubkey,
+    pub creator: Pubkey,
+    pub oxo_reserve: u64,
+    pub token_supply: u64,
+    pub lp_tokens_locked: u64,
+    pub lp_lock_until: i64,
+    pub graduated_at: i64,
+}
+
+#[event]
+pub struct LpTokensClaimed {
+    pub agent_mint: Pubkey,
+    pub creator: Pubkey,
+    pub lp_amount: u64,
+}
+
 // =========================================================================
 // ERRORS
 // =========================================================================
@@ -995,4 +1132,30 @@ pub enum OxoError {
     Overflow,
     #[msg("Division by zero")]
     DivisionByZero,
+    #[msg("Below graduation threshold (25,000 OXO)")]
+    BelowGraduationThreshold,
+    #[msg("Agent not graduated yet")]
+    NotGraduated,
+    #[msg("LP tokens still locked")]
+    LpStillLocked,
+    #[msg("No LP tokens to claim")]
+    NoLpToClaim,
+}
+
+// =========================================================================
+// HELPERS
+// =========================================================================
+
+/// Integer square root using Newton's method
+fn integer_sqrt(n: u128) -> u128 {
+    if n == 0 {
+        return 0;
+    }
+    let mut x = n;
+    let mut y = (x + 1) / 2;
+    while y < x {
+        x = y;
+        y = (x + n / x) / 2;
+    }
+    x
 }

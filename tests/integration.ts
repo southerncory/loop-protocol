@@ -4,7 +4,6 @@ import { PublicKey, Keypair, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web
 import { 
   TOKEN_PROGRAM_ID, 
   createMint, 
-  createAccount,
   mintTo,
   getAccount,
   getOrCreateAssociatedTokenAccount,
@@ -132,28 +131,32 @@ describe("Loop Protocol Integration", () => {
    * Setup helper: Create token accounts for a user
    */
   async function setupUserTokenAccounts(user: Keypair) {
-    const usdcAccount = await createAccount(
+    const usdcAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       user,
       usdcMint,
       user.publicKey
     );
     
-    const credAccount = await createAccount(
+    const credAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       user,
       credMint,
       user.publicKey
     );
     
-    const oxoAccount = await createAccount(
+    const oxoAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       user,
       oxoMint,
       user.publicKey
     );
     
-    return { usdcAccount, credAccount, oxoAccount };
+    return { 
+      usdcAccount: usdcAta.address, 
+      credAccount: credAta.address, 
+      oxoAccount: oxoAta.address 
+    };
   }
 
   /**
@@ -208,45 +211,53 @@ describe("Loop Protocol Integration", () => {
     // Setup mints
     await setupMints();
     
-    // Create reserve vault (USDC reserve for Cred backing)
-    reserveVault = await createAccount(
+    // Create reserve vault (USDC reserve for Cred backing) - PDA owner
+    const reserveAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       alice,
       usdcMint,
-      credConfigPda
+      credConfigPda,
+      true // allowOwnerOffCurve - critical for PDA owners
     );
+    reserveVault = reserveAta.address;
     
     // Create fee account
-    feeAccount = await createAccount(
+    const feeAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       alice,
       credMint,
       provider.wallet.publicKey
     );
+    feeAccount = feeAta.address;
     
-    // Create fee pool account (for OXO fee distribution)
-    feePoolAccount = await createAccount(
+    // Create fee pool account (for OXO fee distribution) - PDA owner
+    const feePoolAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       alice,
       credMint,
-      oxoConfigPda
+      oxoConfigPda,
+      true // allowOwnerOffCurve
     );
+    feePoolAccount = feePoolAta.address;
     
-    // Create protocol OXO account
-    protocolOxoAccount = await createAccount(
+    // Create protocol OXO account - PDA owner
+    const protocolOxoAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       alice,
       oxoMint,
-      oxoConfigPda
+      oxoConfigPda,
+      true // allowOwnerOffCurve
     );
+    protocolOxoAccount = protocolOxoAta.address;
     
     // Create treasury OXO account
-    treasuryOxoAccount = await createAccount(
+    const treasuryOxoAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       alice,
       oxoMint,
       provider.wallet.publicKey
     );
+    treasuryOxoAccount = treasuryOxoAta.address;
     
     // Setup user token accounts
     const aliceAccounts = await setupUserTokenAccounts(alice);
@@ -431,14 +442,15 @@ describe("Loop Protocol Integration", () => {
       
       console.log("  Alice vault created:", tx.slice(0, 20) + "...");
       
-      // Create vault's Cred token account
-      aliceVaultCredAccount = await createAccount(
+      // Create vault's Cred token account - PDA owner
+      const aliceVaultCredAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         alice,
         credMint,
         aliceVaultPda,
-        alice
+        true // allowOwnerOffCurve - critical for PDA owners
       );
+      aliceVaultCredAccount = aliceVaultCredAta.address;
       
       const vault = await vaultProgram.account.vault.fetch(aliceVaultPda);
       expect(vault.owner.toString()).to.equal(alice.publicKey.toString());
@@ -458,14 +470,15 @@ describe("Loop Protocol Integration", () => {
       
       console.log("  Bob vault created:", tx.slice(0, 20) + "...");
       
-      // Create vault's Cred token account
-      bobVaultCredAccount = await createAccount(
+      // Create vault's Cred token account - PDA owner
+      const bobVaultCredAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         bob,
         credMint,
         bobVaultPda,
-        bob
+        true // allowOwnerOffCurve - critical for PDA owners
       );
+      bobVaultCredAccount = bobVaultCredAta.address;
       
       const vault = await vaultProgram.account.vault.fetch(bobVaultPda);
       expect(vault.owner.toString()).to.equal(bob.publicKey.toString());
@@ -703,13 +716,13 @@ describe("Loop Protocol Integration", () => {
   describe("Phase 9: Fee Distribution and Claiming", () => {
     it("deposits fees to fee pool", async () => {
       // First mint some Cred to fee source
-      const feeSourceAccount = await createAccount(
+      const feeSourceAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         alice,
         credMint,
-        alice.publicKey,
-        alice
+        alice.publicKey
       );
+      const feeSourceAccount = feeSourceAta.address;
       
       // Need to mint cred to the fee source (this simulates protocol fees collected)
       // In real scenario, fees come from VTP transfers and captures

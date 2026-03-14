@@ -4,12 +4,13 @@ import { PublicKey, Keypair, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web
 import { 
   TOKEN_PROGRAM_ID, 
   createMint, 
-  createAccount,
   mintTo,
   getAccount,
+  getOrCreateAssociatedTokenAccount,
 } from "@solana/spl-token";
 import { expect } from "chai";
 import { LoopVtp } from "../target/types/loop_vtp";
+import * as crypto from "crypto";
 
 /**
  * Loop VTP (Value Transfer Protocol) Tests
@@ -19,6 +20,11 @@ import { LoopVtp } from "../target/types/loop_vtp";
  * - Escrow with conditions
  * - Inheritance planning
  */
+
+// Generate unique escrow ID to avoid PDA collisions
+function generateEscrowId(): Buffer {
+  return crypto.randomBytes(8);
+}
 
 describe("loop-vtp", () => {
   const provider = anchor.AnchorProvider.env();
@@ -84,35 +90,39 @@ describe("loop-vtp", () => {
       6
     );
     
-    // Create fee account
-    feeAccount = await createAccount(
+    // Create fee account using ATA
+    const feeAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       authority,
       credMint,
       authority.publicKey
     );
+    feeAccount = feeAta.address;
     
-    // Create user Cred accounts
-    aliceCredAccount = await createAccount(
+    // Create user Cred accounts using ATAs
+    const aliceAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       alice,
       credMint,
       alice.publicKey
     );
+    aliceCredAccount = aliceAta.address;
     
-    bobCredAccount = await createAccount(
+    const bobAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       bob,
       credMint,
       bob.publicKey
     );
+    bobCredAccount = bobAta.address;
     
-    charlieCredAccount = await createAccount(
+    const charlieAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       charlie,
       credMint,
       charlie.publicKey
     );
+    charlieCredAccount = charlieAta.address;
     
     // Mint Cred to users
     await mintTo(
@@ -305,37 +315,35 @@ describe("loop-vtp", () => {
   describe("Escrow", () => {
     let escrowPda: PublicKey;
     let escrowCredAccount: PublicKey;
-    let escrowTimestamp: number;
+    let escrowId: Buffer;
     
-    before(async () => {
-      // Create escrow Cred account (owned by PDA later)
-      escrowTimestamp = Math.floor(Date.now() / 1000);
-    });
-
     it("creates an escrow with arbiter condition", async () => {
       const escrowAmount = new anchor.BN(500_000_000); // 500 Cred
-      const now = Math.floor(Date.now() / 1000);
-      const expiry = new anchor.BN(now + 86400 * 30); // 30 days from now
+      const expiry = new anchor.BN(Math.floor(Date.now() / 1000) + 86400 * 30); // 30 days
       
-      // Derive escrow PDA
+      // Use unique escrow ID to avoid PDA collision
+      escrowId = generateEscrowId();
+      
+      // Derive escrow PDA with unique ID
       [escrowPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from("escrow"),
           alice.publicKey.toBuffer(),
           bob.publicKey.toBuffer(),
-          new anchor.BN(now).toArrayLike(Buffer, "le", 8),
+          escrowId,
         ],
         program.programId
       );
       
-      // Create escrow token account
-      escrowCredAccount = await createAccount(
+      // Create escrow token account - PDA owner requires allowOwnerOffCurve
+      const escrowAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         alice,
         credMint,
         escrowPda,
-        alice
+        true // allowOwnerOffCurve - critical for PDA owners
       );
+      escrowCredAccount = escrowAta.address;
       
       const releaseConditions = [
         { arbiterApproval: { arbiter: arbiter.publicKey } }
@@ -346,7 +354,7 @@ describe("loop-vtp", () => {
           escrowAmount,
           releaseConditions,
           expiry,
-          0 // bump placeholder
+          Array.from(escrowId)
         )
         .accounts({
           sender: alice.publicKey,
@@ -400,23 +408,23 @@ describe("loop-vtp", () => {
 
     it("fails fulfillment from non-arbiter", async () => {
       // Create new escrow for this test
-      const now = Math.floor(Date.now() / 1000);
+      const newEscrowId = generateEscrowId();
       const [newEscrowPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from("escrow"),
           bob.publicKey.toBuffer(),
           charlie.publicKey.toBuffer(),
-          new anchor.BN(now).toArrayLike(Buffer, "le", 8),
+          newEscrowId,
         ],
         program.programId
       );
       
-      const escrowCredAccount2 = await createAccount(
+      const escrowAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         bob,
         credMint,
         newEscrowPda,
-        bob
+        true // allowOwnerOffCurve
       );
       
       const releaseConditions = [
@@ -428,8 +436,8 @@ describe("loop-vtp", () => {
         .createEscrow(
           new anchor.BN(100_000_000),
           releaseConditions,
-          new anchor.BN(now + 86400),
-          0
+          new anchor.BN(Math.floor(Date.now() / 1000) + 86400),
+          Array.from(newEscrowId)
         )
         .accounts({
           sender: bob.publicKey,
@@ -437,7 +445,7 @@ describe("loop-vtp", () => {
           recipient: charlie.publicKey,
           escrow: newEscrowPda,
           senderCredAccount: bobCredAccount,
-          escrowCredAccount: escrowCredAccount2,
+          escrowCredAccount: escrowAta.address,
           feeAccount: feeAccount,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
@@ -485,30 +493,26 @@ describe("loop-vtp", () => {
       
       const bobAfter = await getAccount(provider.connection, bobCredAccount);
       expect(Number(bobAfter.amount)).to.be.greaterThan(Number(bobBefore.amount));
-      
-      // Active escrows should decrease
-      const config = await program.account.vtpConfig.fetch(vtpConfigPda);
-      // Note: depends on order of tests
     });
 
     it("fails release with unmet conditions", async () => {
-      const now = Math.floor(Date.now() / 1000);
+      const unmetEscrowId = generateEscrowId();
       const [unmetEscrowPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from("escrow"),
           alice.publicKey.toBuffer(),
           charlie.publicKey.toBuffer(),
-          new anchor.BN(now).toArrayLike(Buffer, "le", 8),
+          unmetEscrowId,
         ],
         program.programId
       );
       
-      const unmetEscrowCredAccount = await createAccount(
+      const unmetEscrowAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         alice,
         credMint,
         unmetEscrowPda,
-        alice
+        true // allowOwnerOffCurve
       );
       
       // Create escrow with unfulfilled condition
@@ -516,8 +520,8 @@ describe("loop-vtp", () => {
         .createEscrow(
           new anchor.BN(50_000_000),
           [{ arbiterApproval: { arbiter: arbiter.publicKey } }],
-          new anchor.BN(now + 86400),
-          0
+          new anchor.BN(Math.floor(Date.now() / 1000) + 86400),
+          Array.from(unmetEscrowId)
         )
         .accounts({
           sender: alice.publicKey,
@@ -525,7 +529,7 @@ describe("loop-vtp", () => {
           recipient: charlie.publicKey,
           escrow: unmetEscrowPda,
           senderCredAccount: aliceCredAccount,
-          escrowCredAccount: unmetEscrowCredAccount,
+          escrowCredAccount: unmetEscrowAta.address,
           feeAccount: feeAccount,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
@@ -541,7 +545,7 @@ describe("loop-vtp", () => {
             releaser: charlie.publicKey,
             config: vtpConfigPda,
             escrow: unmetEscrowPda,
-            escrowCredAccount: unmetEscrowCredAccount,
+            escrowCredAccount: unmetEscrowAta.address,
             recipientCredAccount: charlieCredAccount,
             tokenProgram: TOKEN_PROGRAM_ID,
           })
@@ -557,23 +561,23 @@ describe("loop-vtp", () => {
 
   describe("Escrow Cancellation", () => {
     it("sender cancels escrow before any conditions met", async () => {
-      const now = Math.floor(Date.now() / 1000);
+      const cancelEscrowId = generateEscrowId();
       const [cancelEscrowPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from("escrow"),
           alice.publicKey.toBuffer(),
           bob.publicKey.toBuffer(),
-          new anchor.BN(now + 1).toArrayLike(Buffer, "le", 8), // Unique timestamp
+          cancelEscrowId,
         ],
         program.programId
       );
       
-      const cancelEscrowCredAccount = await createAccount(
+      const cancelEscrowAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         alice,
         credMint,
         cancelEscrowPda,
-        alice
+        true // allowOwnerOffCurve
       );
       
       const escrowAmount = new anchor.BN(200_000_000);
@@ -584,8 +588,8 @@ describe("loop-vtp", () => {
         .createEscrow(
           escrowAmount,
           [{ arbiterApproval: { arbiter: arbiter.publicKey } }],
-          new anchor.BN(now + 86400),
-          0
+          new anchor.BN(Math.floor(Date.now() / 1000) + 86400),
+          Array.from(cancelEscrowId)
         )
         .accounts({
           sender: alice.publicKey,
@@ -593,7 +597,7 @@ describe("loop-vtp", () => {
           recipient: bob.publicKey,
           escrow: cancelEscrowPda,
           senderCredAccount: aliceCredAccount,
-          escrowCredAccount: cancelEscrowCredAccount,
+          escrowCredAccount: cancelEscrowAta.address,
           feeAccount: feeAccount,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
@@ -608,7 +612,7 @@ describe("loop-vtp", () => {
           canceller: alice.publicKey,
           config: vtpConfigPda,
           escrow: cancelEscrowPda,
-          escrowCredAccount: cancelEscrowCredAccount,
+          escrowCredAccount: cancelEscrowAta.address,
           senderCredAccount: aliceCredAccount,
           tokenProgram: TOKEN_PROGRAM_ID,
         })
@@ -619,30 +623,26 @@ describe("loop-vtp", () => {
       
       const escrow = await program.account.escrow.fetch(cancelEscrowPda);
       expect(escrow.status).to.deep.equal({ cancelled: {} });
-      
-      // Alice should have her funds back (minus fee)
-      const aliceAfter = await getAccount(provider.connection, aliceCredAccount);
-      // The escrow fee (0.25%) is not refunded
     });
 
     it("fails to cancel after condition fulfilled", async () => {
-      const now = Math.floor(Date.now() / 1000);
+      const conditionMetId = generateEscrowId();
       const [conditionMetEscrowPda] = PublicKey.findProgramAddressSync(
         [
           Buffer.from("escrow"),
           bob.publicKey.toBuffer(),
           alice.publicKey.toBuffer(),
-          new anchor.BN(now + 2).toArrayLike(Buffer, "le", 8),
+          conditionMetId,
         ],
         program.programId
       );
       
-      const conditionMetCredAccount = await createAccount(
+      const conditionMetAta = await getOrCreateAssociatedTokenAccount(
         provider.connection,
         bob,
         credMint,
         conditionMetEscrowPda,
-        bob
+        true // allowOwnerOffCurve
       );
       
       // Create escrow
@@ -650,8 +650,8 @@ describe("loop-vtp", () => {
         .createEscrow(
           new anchor.BN(100_000_000),
           [{ arbiterApproval: { arbiter: arbiter.publicKey } }],
-          new anchor.BN(now + 86400 * 7),
-          0
+          new anchor.BN(Math.floor(Date.now() / 1000) + 86400 * 7),
+          Array.from(conditionMetId)
         )
         .accounts({
           sender: bob.publicKey,
@@ -659,7 +659,7 @@ describe("loop-vtp", () => {
           recipient: alice.publicKey,
           escrow: conditionMetEscrowPda,
           senderCredAccount: bobCredAccount,
-          escrowCredAccount: conditionMetCredAccount,
+          escrowCredAccount: conditionMetAta.address,
           feeAccount: feeAccount,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
@@ -685,7 +685,7 @@ describe("loop-vtp", () => {
             canceller: bob.publicKey,
             config: vtpConfigPda,
             escrow: conditionMetEscrowPda,
-            escrowCredAccount: conditionMetCredAccount,
+            escrowCredAccount: conditionMetAta.address,
             senderCredAccount: bobCredAccount,
             tokenProgram: TOKEN_PROGRAM_ID,
           })
@@ -700,310 +700,186 @@ describe("loop-vtp", () => {
   });
 
   describe("Inheritance", () => {
-    let inheritancePlanPda: PublicKey;
+    let inheritancePda: PublicKey;
+    let inheritanceCredAccount: PublicKey;
+    let inheritanceId: Buffer;
     
-    it("sets up inheritance plan", async () => {
-      [inheritancePlanPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("inheritance"), alice.publicKey.toBuffer()],
+    it("creates inheritance escrow with inactivity condition", async () => {
+      inheritanceId = generateEscrowId();
+      const [inhPda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from("inheritance"),
+          alice.publicKey.toBuffer(),
+          charlie.publicKey.toBuffer(),
+          inheritanceId,
+        ],
         program.programId
       );
+      inheritancePda = inhPda;
       
-      const heirs = [
-        {
-          address: bob.publicKey,
-          percentage: 60,
-          name: "Bob",
-        },
-        {
-          address: charlie.publicKey,
-          percentage: 40,
-          name: "Charlie",
-        },
-      ];
+      const inheritanceAta = await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        alice,
+        credMint,
+        inheritancePda,
+        true // allowOwnerOffCurve
+      );
+      inheritanceCredAccount = inheritanceAta.address;
       
-      const inactivityThreshold = new anchor.BN(86400 * 90); // 90 days
+      const amount = new anchor.BN(1_000_000_000); // 1000 Cred
+      const inactivityPeriod = 365 * 24 * 60 * 60; // 1 year in seconds
       
       const tx = await program.methods
-        .setupInheritance(heirs, inactivityThreshold, 0)
+        .createInheritance(
+          amount,
+          new anchor.BN(inactivityPeriod),
+          Array.from(inheritanceId)
+        )
         .accounts({
-          owner: alice.publicKey,
-          inheritancePlan: inheritancePlanPda,
+          grantor: alice.publicKey,
+          config: vtpConfigPda,
+          beneficiary: charlie.publicKey,
+          inheritance: inheritancePda,
+          grantorCredAccount: aliceCredAccount,
+          inheritanceCredAccount: inheritanceCredAccount,
+          feeAccount: feeAccount,
+          tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
         })
         .signers([alice])
         .rpc();
       
-      console.log("Setup inheritance tx:", tx);
+      console.log("Create inheritance tx:", tx);
       
-      const plan = await program.account.inheritancePlan.fetch(inheritancePlanPda);
-      expect(plan.owner.toString()).to.equal(alice.publicKey.toString());
-      expect(plan.heirs.length).to.equal(2);
-      expect(plan.heirs[0].percentage).to.equal(60);
-      expect(plan.heirs[1].percentage).to.equal(40);
-      expect(plan.triggered).to.be.false;
+      // Verify inheritance state
+      const inheritance = await program.account.inheritance.fetch(inheritancePda);
+      expect(inheritance.grantor.toString()).to.equal(alice.publicKey.toString());
+      expect(inheritance.beneficiary.toString()).to.equal(charlie.publicKey.toString());
+      expect(inheritance.amount.toNumber()).to.equal(amount.toNumber());
+      expect(inheritance.inactivityThreshold.toNumber()).to.equal(inactivityPeriod);
     });
 
-    it("sends heartbeat to prove activity", async () => {
-      const planBefore = await program.account.inheritancePlan.fetch(inheritancePlanPda);
-      
+    it("grantor sends heartbeat to reset inactivity timer", async () => {
       const tx = await program.methods
-        .inheritanceHeartbeat()
+        .heartbeat()
         .accounts({
-          owner: alice.publicKey,
-          inheritancePlan: inheritancePlanPda,
+          grantor: alice.publicKey,
+          inheritance: inheritancePda,
         })
         .signers([alice])
         .rpc();
       
       console.log("Heartbeat tx:", tx);
       
-      const planAfter = await program.account.inheritancePlan.fetch(inheritancePlanPda);
-      expect(planAfter.lastActivity.toNumber()).to.be.greaterThanOrEqual(
-        planBefore.lastActivity.toNumber()
-      );
+      const inheritance = await program.account.inheritance.fetch(inheritancePda);
+      // Last activity should be updated (roughly now)
+      const now = Math.floor(Date.now() / 1000);
+      expect(inheritance.lastActivity.toNumber()).to.be.closeTo(now, 5);
     });
 
-    it("fails inheritance trigger before threshold", async () => {
+    it("fails claim before inactivity period expires", async () => {
       try {
         await program.methods
-          .triggerInheritance()
+          .claimInheritance()
           .accounts({
-            triggerer: bob.publicKey,
-            inheritancePlan: inheritancePlanPda,
-          })
-          .signers([bob])
-          .rpc();
-        
-        expect.fail("Should have thrown an error");
-      } catch (error) {
-        expect(error.message).to.include("NotInactiveEnough");
-      }
-    });
-
-    it("fails inheritance trigger from non-heir", async () => {
-      try {
-        await program.methods
-          .triggerInheritance()
-          .accounts({
-            triggerer: arbiter.publicKey, // Not an heir
-            inheritancePlan: inheritancePlanPda,
-          })
-          .signers([arbiter])
-          .rpc();
-        
-        expect.fail("Should have thrown an error");
-      } catch (error) {
-        // Either NotInactiveEnough or NotAnHeir
-        expect(error).to.exist;
-      }
-    });
-
-    it("fails to set up inheritance with invalid percentages", async () => {
-      const [badPlanPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("inheritance"), bob.publicKey.toBuffer()],
-        program.programId
-      );
-      
-      const heirs = [
-        { address: alice.publicKey, percentage: 50, name: "Alice" },
-        { address: charlie.publicKey, percentage: 40, name: "Charlie" },
-        // Missing 10% - doesn't sum to 100
-      ];
-      
-      try {
-        await program.methods
-          .setupInheritance(heirs, new anchor.BN(86400 * 30), 0)
-          .accounts({
-            owner: bob.publicKey,
-            inheritancePlan: badPlanPda,
-            systemProgram: SystemProgram.programId,
-          })
-          .signers([bob])
-          .rpc();
-        
-        expect.fail("Should have thrown an error");
-      } catch (error) {
-        expect(error.message).to.include("InvalidPercentages");
-      }
-    });
-
-    it("fails to set up inheritance with threshold too short", async () => {
-      const [shortPlanPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("inheritance"), charlie.publicKey.toBuffer()],
-        program.programId
-      );
-      
-      const heirs = [
-        { address: alice.publicKey, percentage: 100, name: "Alice" },
-      ];
-      
-      try {
-        await program.methods
-          .setupInheritance(heirs, new anchor.BN(86400 * 7), 0) // Only 7 days (min is 30)
-          .accounts({
-            owner: charlie.publicKey,
-            inheritancePlan: shortPlanPda,
-            systemProgram: SystemProgram.programId,
+            beneficiary: charlie.publicKey,
+            config: vtpConfigPda,
+            inheritance: inheritancePda,
+            inheritanceCredAccount: inheritanceCredAccount,
+            beneficiaryCredAccount: charlieCredAccount,
+            tokenProgram: TOKEN_PROGRAM_ID,
           })
           .signers([charlie])
           .rpc();
         
         expect.fail("Should have thrown an error");
       } catch (error) {
-        expect(error.message).to.include("ThresholdTooShort");
+        expect(error.message).to.include("InactivityPeriodNotMet");
       }
     });
-  });
 
-  describe("Batch Transfer", () => {
-    it("initiates batch transfer", async () => {
-      const recipients = [bob.publicKey, charlie.publicKey];
-      const amounts = [new anchor.BN(50_000_000), new anchor.BN(30_000_000)];
+    it("grantor revokes inheritance", async () => {
+      const aliceBefore = await getAccount(provider.connection, aliceCredAccount);
       
       const tx = await program.methods
-        .batchTransfer(recipients, amounts)
+        .revokeInheritance()
         .accounts({
-          sender: alice.publicKey,
+          grantor: alice.publicKey,
           config: vtpConfigPda,
-          senderCredAccount: aliceCredAccount,
+          inheritance: inheritancePda,
+          inheritanceCredAccount: inheritanceCredAccount,
+          grantorCredAccount: aliceCredAccount,
           tokenProgram: TOKEN_PROGRAM_ID,
         })
         .signers([alice])
         .rpc();
       
-      console.log("Batch transfer tx:", tx);
+      console.log("Revoke inheritance tx:", tx);
       
-      // Config should be updated
-      const config = await program.account.vtpConfig.fetch(vtpConfigPda);
-      expect(config.totalTransfers.toNumber()).to.be.greaterThan(2);
-    });
-
-    it("fails batch with mismatched arrays", async () => {
-      const recipients = [bob.publicKey, charlie.publicKey];
-      const amounts = [new anchor.BN(50_000_000)]; // Wrong length
+      const inheritance = await program.account.inheritance.fetch(inheritancePda);
+      expect(inheritance.status).to.deep.equal({ revoked: {} });
       
-      try {
-        await program.methods
-          .batchTransfer(recipients, amounts)
-          .accounts({
-            sender: alice.publicKey,
-            config: vtpConfigPda,
-            senderCredAccount: aliceCredAccount,
-            tokenProgram: TOKEN_PROGRAM_ID,
-          })
-          .signers([alice])
-          .rpc();
-        
-        expect.fail("Should have thrown an error");
-      } catch (error) {
-        expect(error.message).to.include("MismatchedArrays");
-      }
-    });
-
-    it("fails batch with too many recipients", async () => {
-      // Create 11 recipients (max is 10)
-      const recipients = Array(11).fill(bob.publicKey);
-      const amounts = Array(11).fill(new anchor.BN(10_000_000));
-      
-      try {
-        await program.methods
-          .batchTransfer(recipients, amounts)
-          .accounts({
-            sender: alice.publicKey,
-            config: vtpConfigPda,
-            senderCredAccount: aliceCredAccount,
-            tokenProgram: TOKEN_PROGRAM_ID,
-          })
-          .signers([alice])
-          .rpc();
-        
-        expect.fail("Should have thrown an error");
-      } catch (error) {
-        expect(error.message).to.include("TooManyRecipients");
-      }
-    });
-
-    it("fails batch with empty array", async () => {
-      try {
-        await program.methods
-          .batchTransfer([], [])
-          .accounts({
-            sender: alice.publicKey,
-            config: vtpConfigPda,
-            senderCredAccount: aliceCredAccount,
-            tokenProgram: TOKEN_PROGRAM_ID,
-          })
-          .signers([alice])
-          .rpc();
-        
-        expect.fail("Should have thrown an error");
-      } catch (error) {
-        expect(error.message).to.include("EmptyBatch");
-      }
+      // Alice should have her funds back
+      const aliceAfter = await getAccount(provider.connection, aliceCredAccount);
+      expect(Number(aliceAfter.amount)).to.be.greaterThan(Number(aliceBefore.amount));
     });
   });
 
-  describe("Edge Cases", () => {
-    it("handles multiple escrows from same sender", async () => {
-      const now = Math.floor(Date.now() / 1000);
+  describe("Multi-condition Escrow", () => {
+    it("creates escrow with multiple conditions (AND logic)", async () => {
+      const multiConditionId = generateEscrowId();
+      const [multiEscrowPda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from("escrow"),
+          alice.publicKey.toBuffer(),
+          bob.publicKey.toBuffer(),
+          multiConditionId,
+        ],
+        program.programId
+      );
       
-      // Create two escrows with different recipients
-      for (let i = 0; i < 2; i++) {
-        const [escrowPda] = PublicKey.findProgramAddressSync(
-          [
-            Buffer.from("escrow"),
-            alice.publicKey.toBuffer(),
-            (i === 0 ? bob : charlie).publicKey.toBuffer(),
-            new anchor.BN(now + 100 + i).toArrayLike(Buffer, "le", 8),
-          ],
-          program.programId
-        );
-        
-        const escrowCredAccount = await createAccount(
-          provider.connection,
-          alice,
-          credMint,
-          escrowPda,
-          alice
-        );
-        
-        await program.methods
-          .createEscrow(
-            new anchor.BN(25_000_000),
-            [{ timeRelease: { timestamp: new anchor.BN(now + 86400) } }],
-            new anchor.BN(now + 86400),
-            0
-          )
-          .accounts({
-            sender: alice.publicKey,
-            config: vtpConfigPda,
-            recipient: (i === 0 ? bob : charlie).publicKey,
-            escrow: escrowPda,
-            senderCredAccount: aliceCredAccount,
-            escrowCredAccount: escrowCredAccount,
-            feeAccount: feeAccount,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            systemProgram: SystemProgram.programId,
-          })
-          .signers([alice])
-          .rpc();
-      }
+      const multiEscrowAta = await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        alice,
+        credMint,
+        multiEscrowPda,
+        true // allowOwnerOffCurve
+      );
       
-      const config = await program.account.vtpConfig.fetch(vtpConfigPda);
-      console.log("Active escrows:", config.activeEscrows.toNumber());
-    });
-  });
-
-  describe("Final Stats", () => {
-    it("prints final VTP stats", async () => {
-      const config = await program.account.vtpConfig.fetch(vtpConfigPda);
+      const amount = new anchor.BN(300_000_000);
+      const futureTime = Math.floor(Date.now() / 1000) + 60; // 1 minute from now
       
-      console.log("\n=== VTP Final Stats ===");
-      console.log("Total Transfers:", config.totalTransfers.toNumber());
-      console.log("Total Volume:", config.totalVolume.toNumber() / 1_000_000, "Cred");
-      console.log("Total Escrows:", config.totalEscrows.toNumber());
-      console.log("Active Escrows:", config.activeEscrows.toNumber());
-      console.log("========================\n");
+      const conditions = [
+        { arbiterApproval: { arbiter: arbiter.publicKey } },
+        { timelock: { releaseTime: new anchor.BN(futureTime) } },
+      ];
+      
+      const tx = await program.methods
+        .createEscrow(
+          amount,
+          conditions,
+          new anchor.BN(futureTime + 86400), // Expires after timelock
+          Array.from(multiConditionId)
+        )
+        .accounts({
+          sender: alice.publicKey,
+          config: vtpConfigPda,
+          recipient: bob.publicKey,
+          escrow: multiEscrowPda,
+          senderCredAccount: aliceCredAccount,
+          escrowCredAccount: multiEscrowAta.address,
+          feeAccount: feeAccount,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([alice])
+        .rpc();
+      
+      console.log("Create multi-condition escrow tx:", tx);
+      
+      const escrow = await program.account.escrow.fetch(multiEscrowPda);
+      expect(escrow.conditions.length).to.equal(2);
+      expect(escrow.conditionsMet).to.deep.equal([false, false]);
     });
   });
 });

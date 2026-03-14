@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::{Token, TokenAccount};
 
-declare_id!("H5c9xfPYcx6EtC8hpThshARtUR7tq1NfMJVrTx8z9Jcx");
+declare_id!("FE3ZJBqVcqP6ar2pnndMghgNb3pi4mrjhVoAS7x4BVCA");
 
 /// Loop Agent Value Protocol (AVP)
 /// 
@@ -274,13 +275,117 @@ pub mod loop_avp {
         
         Ok(())
     }
+
+    /// Unstake OXO (after lock expires)
+    pub fn unstake(
+        ctx: Context<Unstake>,
+        amount: u64,
+    ) -> Result<()> {
+        let identity = &mut ctx.accounts.agent_identity;
+        let now = Clock::get()?.unix_timestamp;
+        
+        require!(identity.agent_type == AgentType::Service, AvpError::NotServiceAgent);
+        require!(now >= identity.stake_locked_until, AvpError::StakeLocked);
+        require!(amount > 0, AvpError::InvalidAmount);
+        
+        // Ensure minimum stake remains
+        let remaining = identity.stake_amount.checked_sub(amount)
+            .ok_or(AvpError::InsufficientStake)?;
+        require!(remaining >= MIN_SERVICE_AGENT_STAKE, AvpError::BelowMinimumStake);
+        
+        identity.stake_amount = remaining;
+        
+        emit!(StakeWithdrawn {
+            agent: identity.agent_pubkey,
+            amount,
+            new_total: remaining,
+        });
+        
+        Ok(())
+    }
+
+    // =========================================================================
+    // SERVICE MARKETPLACE
+    // =========================================================================
+
+    /// Execute a service call - routes fees 90% to creator, 10% to protocol
+    pub fn execute_service_call(
+        ctx: Context<ExecuteServiceCall>,
+        fee_amount: u64,
+    ) -> Result<()> {
+        let identity = &ctx.accounts.service_agent_identity;
+        
+        // Verify this is an active service agent
+        require!(identity.agent_type == AgentType::Service, AvpError::NotServiceAgent);
+        require!(identity.status == AgentStatus::Active, AvpError::AgentNotActive);
+        require!(fee_amount > 0, AvpError::InvalidAmount);
+        
+        // Calculate fee split: 90% to creator, 10% to protocol
+        let creator_share = fee_amount
+            .checked_mul(90)
+            .ok_or(AvpError::Overflow)?
+            .checked_div(100)
+            .ok_or(AvpError::Overflow)?;
+        let protocol_share = fee_amount.saturating_sub(creator_share);
+        
+        // Transfer fee from caller to creator (90%)
+        let cpi_accounts_creator = anchor_spl::token::Transfer {
+            from: ctx.accounts.caller_cred_account.to_account_info(),
+            to: ctx.accounts.creator_cred_account.to_account_info(),
+            authority: ctx.accounts.caller.to_account_info(),
+        };
+        let cpi_ctx_creator = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            cpi_accounts_creator,
+        );
+        anchor_spl::token::transfer(cpi_ctx_creator, creator_share)?;
+        
+        // Transfer fee from caller to protocol treasury (10%)
+        let cpi_accounts_protocol = anchor_spl::token::Transfer {
+            from: ctx.accounts.caller_cred_account.to_account_info(),
+            to: ctx.accounts.protocol_treasury.to_account_info(),
+            authority: ctx.accounts.caller.to_account_info(),
+        };
+        let cpi_ctx_protocol = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            cpi_accounts_protocol,
+        );
+        anchor_spl::token::transfer(cpi_ctx_protocol, protocol_share)?;
+        
+        // Update reputation slightly for completing a service call
+        let identity = &mut ctx.accounts.service_agent_identity;
+        if identity.reputation_score < 10000 {
+            identity.reputation_score = identity.reputation_score.saturating_add(1);
+        }
+        
+        emit!(ServiceCallExecuted {
+            service_agent: identity.agent_pubkey,
+            caller: ctx.accounts.caller.key(),
+            fee_amount,
+            creator_share,
+            protocol_share,
+            timestamp: Clock::get()?.unix_timestamp,
+        });
+        
+        Ok(())
+    }
 }
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-pub type CapabilityId = [u8; 8];
+// Capability IDs as fixed 8-byte identifiers
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
+pub struct CapabilityId {
+    pub value: [u8; 8],
+}
+
+impl CapabilityId {
+    pub fn new(value: [u8; 8]) -> Self {
+        Self { value }
+    }
+}
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
 pub enum AgentType {
@@ -438,6 +543,47 @@ pub struct UpdateMetadata<'info> {
     pub agent_identity: Account<'info, AgentIdentity>,
 }
 
+#[derive(Accounts)]
+pub struct Unstake<'info> {
+    /// Creator or authorized recovery
+    pub authority: Signer<'info>,
+    
+    #[account(
+        mut,
+        constraint = agent_identity.creator == Some(authority.key()) @ AvpError::Unauthorized,
+    )]
+    pub agent_identity: Account<'info, AgentIdentity>,
+}
+
+#[derive(Accounts)]
+pub struct ExecuteServiceCall<'info> {
+    /// User calling the service
+    #[account(mut)]
+    pub caller: Signer<'info>,
+    
+    /// Service agent identity - must be active service agent
+    #[account(
+        mut,
+        constraint = service_agent_identity.agent_type == AgentType::Service @ AvpError::NotServiceAgent,
+        constraint = service_agent_identity.status == AgentStatus::Active @ AvpError::AgentNotActive,
+    )]
+    pub service_agent_identity: Account<'info, AgentIdentity>,
+    
+    /// Caller's Cred token account (pays the fee)
+    #[account(mut)]
+    pub caller_cred_account: Account<'info, TokenAccount>,
+    
+    /// Service agent creator's Cred account (receives 90%)
+    #[account(mut)]
+    pub creator_cred_account: Account<'info, TokenAccount>,
+    
+    /// Protocol treasury (receives 10%)
+    #[account(mut)]
+    pub protocol_treasury: Account<'info, TokenAccount>,
+    
+    pub token_program: Program<'info, Token>,
+}
+
 // ============================================================================
 // STATE
 // ============================================================================
@@ -512,6 +658,13 @@ pub struct StakeAdded {
 }
 
 #[event]
+pub struct StakeWithdrawn {
+    pub agent: Pubkey,
+    pub amount: u64,
+    pub new_total: u64,
+}
+
+#[event]
 pub struct ReputationUpdated {
     pub agent: Pubkey,
     pub old_score: u32,
@@ -523,6 +676,16 @@ pub struct ReputationUpdated {
 pub struct MetadataUpdated {
     pub agent: Pubkey,
     pub new_uri: String,
+}
+
+#[event]
+pub struct ServiceCallExecuted {
+    pub service_agent: Pubkey,
+    pub caller: Pubkey,
+    pub fee_amount: u64,
+    pub creator_share: u64,
+    pub protocol_share: u64,
+    pub timestamp: i64,
 }
 
 // ============================================================================
@@ -553,4 +716,8 @@ pub enum AvpError {
     Unauthorized,
     #[msg("Arithmetic overflow")]
     Overflow,
+    #[msg("Stake is still locked")]
+    StakeLocked,
+    #[msg("Would go below minimum stake requirement")]
+    BelowMinimumStake,
 }
