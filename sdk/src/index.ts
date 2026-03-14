@@ -1403,6 +1403,18 @@ export class Loop {
 
   /** Data Capture Module - User-controlled data monetization */
   public readonly data: DataCaptureModule;
+  
+  /** Para Module - Passkey authentication and session keys */
+  public readonly para: ParaModule;
+
+  /** Squads Module - Smart account policies */
+  public readonly squads: SquadsModule;
+
+  /** Reclaim Module - Zero-knowledge proof verification */
+  public readonly reclaim: ReclaimModule;
+
+  /** TEE Module - Trusted execution environment integration */
+  public readonly tee: TeeModule;
 
   constructor(config: LoopConfig) {
     this.connection = config.connection;
@@ -5345,3 +5357,6 @@ export class TEEIntegration {
     throw new Error('TEE integration not yet implemented - requires AWS Nitro SDK');
   }
 }
+
+// Error Classes
+export * from './errors';
