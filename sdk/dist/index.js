@@ -22,16 +22,19 @@ var index_exports = {};
 __export(index_exports, {
   AgentStatus: () => AgentStatus,
   AgentType: () => AgentType,
+  AttentionCaptureModule: () => AttentionCaptureModule,
   AvpModule: () => AvpModule,
   CONSTANTS: () => CONSTANTS,
   CaptureType: () => CaptureType,
   CredModule: () => CredModule,
+  DataCaptureModule: () => DataCaptureModule,
   EscrowStatus: () => EscrowStatus,
   Loop: () => Loop,
   LoopPDA: () => LoopPDA,
   OxoModule: () => OxoModule,
   PROGRAM_IDS: () => PROGRAM_IDS,
   PermissionLevel: () => PermissionLevel,
+  ReferralCaptureModule: () => ReferralCaptureModule,
   VaultModule: () => VaultModule,
   VtpModule: () => VtpModule,
   default: () => index_default
@@ -80,6 +83,7 @@ var CaptureType = /* @__PURE__ */ ((CaptureType2) => {
   CaptureType2[CaptureType2["Data"] = 1] = "Data";
   CaptureType2[CaptureType2["Presence"] = 2] = "Presence";
   CaptureType2[CaptureType2["Attention"] = 3] = "Attention";
+  CaptureType2[CaptureType2["Referral"] = 4] = "Referral";
   return CaptureType2;
 })(CaptureType || {});
 var PermissionLevel = /* @__PURE__ */ ((PermissionLevel2) => {
@@ -108,6 +112,332 @@ var AgentStatus = /* @__PURE__ */ ((AgentStatus2) => {
   AgentStatus2[AgentStatus2["Revoked"] = 2] = "Revoked";
   return AgentStatus2;
 })(AgentStatus || {});
+var ReferralCaptureModule = class {
+  constructor(loop) {
+    this.loop = loop;
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Link Management
+  // ─────────────────────────────────────────────────────────────────────────
+  /**
+   * Create a tracked affiliate link
+   * 
+   * @param originalUrl - The URL to track (e.g., merchant product page)
+   * @param affiliateTag - Unique tag for attribution
+   * @returns TrackedLink with unique ID for sharing
+   * 
+   * @example
+   * ```typescript
+   * const link = await loop.referral.trackLink(
+   *   'https://merchant.com/product/123',
+   *   'burt-affiliate-2024'
+   * );
+   * console.log(link.id); // Share this link
+   * ```
+   */
+  async trackLink(originalUrl, affiliateTag) {
+    throw new Error("Not yet implemented: trackLink");
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Conversion Tracking
+  // ─────────────────────────────────────────────────────────────────────────
+  /**
+   * Register a conversion from a tracked link
+   * 
+   * Called by the merchant integration when a purchase occurs.
+   * 
+   * @param linkId - The tracked link ID that generated the conversion
+   * @param amount - Purchase amount (in Cred)
+   * @param proof - Proof of purchase (e.g., transaction signature)
+   * @returns ConversionRecord with commission details
+   * 
+   * @example
+   * ```typescript
+   * const conversion = await loop.referral.registerConversion(
+   *   'link_abc123',
+   *   new BN(50_000_000), // 50 Cred purchase
+   *   'tx_signature_here'
+   * );
+   * console.log(conversion.commission); // Commission earned
+   * ```
+   */
+  async registerConversion(linkId, amount, proof) {
+    throw new Error("Not yet implemented: registerConversion");
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Commission Management
+  // ─────────────────────────────────────────────────────────────────────────
+  /**
+   * Claim earned commission from conversions
+   * 
+   * Captures commission to the user's vault as Cred.
+   * 
+   * @param user - Affiliate claiming commission (signer)
+   * @param conversionIds - IDs of conversions to claim (or empty for all unclaimed)
+   * @returns Transaction signature
+   * 
+   * @example
+   * ```typescript
+   * const sig = await loop.referral.claimCommission(
+   *   wallet.publicKey,
+   *   ['conv_1', 'conv_2']
+   * );
+   * ```
+   */
+  async claimCommission(user, conversionIds) {
+    throw new Error("Not yet implemented: claimCommission");
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Statistics
+  // ─────────────────────────────────────────────────────────────────────────
+  /**
+   * Get affiliate statistics for a user
+   * 
+   * @param user - Affiliate's wallet address
+   * @returns AffiliateStats with performance metrics
+   * 
+   * @example
+   * ```typescript
+   * const stats = await loop.referral.getAffiliateStats(wallet.publicKey);
+   * console.log(`Earned: ${stats.totalEarned} Cred`);
+   * console.log(`Conversion rate: ${stats.conversionRateBps / 100}%`);
+   * ```
+   */
+  async getAffiliateStats(user) {
+    throw new Error("Not yet implemented: getAffiliateStats");
+  }
+};
+var AttentionCaptureModule = class {
+  constructor(loop) {
+    this.loop = loop;
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Profile Management
+  // ─────────────────────────────────────────────────────────────────────────
+  /**
+   * Register for attention rewards and set preferences
+   * 
+   * Creates an ad profile with user's viewing preferences.
+   * 
+   * @param user - User's wallet address (signer)
+   * @param preferences - Ad viewing preferences
+   * @returns AdProfile with registration details
+   * 
+   * @example
+   * ```typescript
+   * const profile = await loop.attention.registerForAds(
+   *   wallet.publicKey,
+   *   {
+   *     categories: ['tech', 'gaming'],
+   *     blockedCategories: ['gambling'],
+   *     dailyLimit: 10,
+   *     minReward: new BN(100_000) // 0.1 Cred minimum
+   *   }
+   * );
+   * ```
+   */
+  async registerForAds(user, preferences) {
+    throw new Error("Not yet implemented: registerForAds");
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Ad Discovery
+  // ─────────────────────────────────────────────────────────────────────────
+  /**
+   * Get available ads matching user's preferences
+   * 
+   * Returns ads that match the user's profile and haven't been viewed.
+   * 
+   * @param user - User's wallet address
+   * @returns Array of available ads
+   * 
+   * @example
+   * ```typescript
+   * const ads = await loop.attention.getAvailableAds(wallet.publicKey);
+   * for (const ad of ads) {
+   *   console.log(`${ad.title}: ${ad.rewardPerView} Cred`);
+   * }
+   * ```
+   */
+  async getAvailableAds(user) {
+    throw new Error("Not yet implemented: getAvailableAds");
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // View Verification
+  // ─────────────────────────────────────────────────────────────────────────
+  /**
+   * Submit proof of ad view for verification
+   * 
+   * Verifies that the user actually viewed the ad for the required duration.
+   * 
+   * @param user - User who viewed the ad (signer)
+   * @param adId - ID of the ad that was viewed
+   * @param viewProof - Cryptographic proof of view (duration, engagement)
+   * @returns ViewVerification with reward details
+   * 
+   * @example
+   * ```typescript
+   * const verification = await loop.attention.verifyView(
+   *   wallet.publicKey,
+   *   'ad_123',
+   *   generateViewProof(adId, startTime, endTime)
+   * );
+   * if (verification.verified) {
+   *   console.log(`Earned: ${verification.rewardEarned} Cred`);
+   * }
+   * ```
+   */
+  async verifyView(user, adId, viewProof) {
+    throw new Error("Not yet implemented: verifyView");
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Reward Claims
+  // ─────────────────────────────────────────────────────────────────────────
+  /**
+   * Claim attention rewards from verified views
+   * 
+   * Captures earned rewards to the user's vault as Cred.
+   * 
+   * @param user - User claiming rewards (signer)
+   * @param viewIds - IDs of verified views to claim (or empty for all unclaimed)
+   * @returns Transaction signature
+   * 
+   * @example
+   * ```typescript
+   * const sig = await loop.attention.claimAttentionReward(
+   *   wallet.publicKey,
+   *   [] // Claim all unclaimed rewards
+   * );
+   * ```
+   */
+  async claimAttentionReward(user, viewIds) {
+    throw new Error("Not yet implemented: claimAttentionReward");
+  }
+};
+var DataCaptureModule = class {
+  constructor(loop) {
+    this.loop = loop;
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Pricing Configuration
+  // ─────────────────────────────────────────────────────────────────────────
+  /**
+   * Set pricing for user's data types
+   * 
+   * Configures which data types are available and their prices.
+   * 
+   * @param user - Data owner (signer)
+   * @param dataTypes - Types of data to make available
+   * @param prices - Prices per data type (in Cred per license)
+   * @returns DataPricingConfig with active settings
+   * 
+   * @example
+   * ```typescript
+   * const config = await loop.data.setDataPricing(
+   *   wallet.publicKey,
+   *   ['browsing', 'preferences'],
+   *   new Map([
+   *     ['browsing', new BN(5_000_000)],     // 5 Cred
+   *     ['preferences', new BN(2_000_000)]   // 2 Cred
+   *   ])
+   * );
+   * ```
+   */
+  async setDataPricing(user, dataTypes, prices) {
+    throw new Error("Not yet implemented: setDataPricing");
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Licensing
+  // ─────────────────────────────────────────────────────────────────────────
+  /**
+   * License data to a buyer
+   * 
+   * Grants a time-limited license to access specific data type.
+   * 
+   * @param user - Data owner (signer)
+   * @param buyer - Buyer's wallet address
+   * @param dataType - Type of data being licensed
+   * @param terms - License terms and conditions
+   * @returns DataLicense with access details
+   * 
+   * @example
+   * ```typescript
+   * const license = await loop.data.licenseData(
+   *   wallet.publicKey,
+   *   buyerPubkey,
+   *   'browsing',
+   *   {
+   *     durationSeconds: new BN(30 * 24 * 60 * 60), // 30 days
+   *     allowReshare: false,
+   *     maxAccessCount: 100,
+   *     allowedUseCases: ['analytics', 'personalization'],
+   *     geoRestrictions: []
+   *   }
+   * );
+   * ```
+   */
+  async licenseData(user, buyer, dataType, terms) {
+    throw new Error("Not yet implemented: licenseData");
+  }
+  /**
+   * Revoke an active data license
+   * 
+   * Immediately terminates buyer's access to the licensed data.
+   * May trigger partial refund depending on terms.
+   * 
+   * @param user - Data owner (signer)
+   * @param licenseId - ID of license to revoke
+   * @returns Transaction signature
+   * 
+   * @example
+   * ```typescript
+   * const sig = await loop.data.revokeDataLicense(
+   *   wallet.publicKey,
+   *   'license_abc123'
+   * );
+   * ```
+   */
+  async revokeDataLicense(user, licenseId) {
+    throw new Error("Not yet implemented: revokeDataLicense");
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Revenue Management
+  // ─────────────────────────────────────────────────────────────────────────
+  /**
+   * Claim earned data licensing revenue
+   * 
+   * Captures accumulated revenue to the user's vault as Cred.
+   * 
+   * @param user - Data owner claiming revenue (signer)
+   * @returns Transaction signature
+   * 
+   * @example
+   * ```typescript
+   * const sig = await loop.data.claimDataRevenue(wallet.publicKey);
+   * ```
+   */
+  async claimDataRevenue(user) {
+    throw new Error("Not yet implemented: claimDataRevenue");
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Statistics
+  // ─────────────────────────────────────────────────────────────────────────
+  /**
+   * Get data licensing statistics for a user
+   * 
+   * @param user - Data owner's wallet address
+   * @returns DataStats with revenue metrics
+   * 
+   * @example
+   * ```typescript
+   * const stats = await loop.data.getDataStats(wallet.publicKey);
+   * console.log(`Total revenue: ${stats.totalRevenue} Cred`);
+   * console.log(`Active licenses: ${stats.activeLicenses}`);
+   * ```
+   */
+  async getDataStats(user) {
+    throw new Error("Not yet implemented: getDataStats");
+  }
+};
 var LoopPDA = class {
   // ─────────────────────────────────────────────────────────────────────────
   // Vault PDAs
@@ -237,6 +567,9 @@ var Loop = class {
     this.oxo = new OxoModule(this);
     this.vtp = new VtpModule(this);
     this.avp = new AvpModule(this);
+    this.referral = new ReferralCaptureModule(this);
+    this.attention = new AttentionCaptureModule(this);
+    this.data = new DataCaptureModule(this);
   }
   /** Get program IDs */
   get programIds() {
@@ -1625,16 +1958,19 @@ var index_default = Loop;
 0 && (module.exports = {
   AgentStatus,
   AgentType,
+  AttentionCaptureModule,
   AvpModule,
   CONSTANTS,
   CaptureType,
   CredModule,
+  DataCaptureModule,
   EscrowStatus,
   Loop,
   LoopPDA,
   OxoModule,
   PROGRAM_IDS,
   PermissionLevel,
+  ReferralCaptureModule,
   VaultModule,
   VtpModule
 });

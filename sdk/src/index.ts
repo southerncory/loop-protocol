@@ -94,6 +94,7 @@ export enum CaptureType {
   Data = 1,
   Presence = 2,
   Attention = 3,
+  Referral = 4,
 }
 
 /** Agent permission levels for vault access */
@@ -332,6 +333,654 @@ export interface AgentIdentity {
 }
 
 // ============================================================================
+// ============================================================================
+// TYPES - Referral Capture Module
+// ============================================================================
+
+/** Tracked affiliate link */
+export interface TrackedLink {
+  /** Unique link ID */
+  id: string;
+  /** Original URL being tracked */
+  originalUrl: string;
+  /** Affiliate tag for attribution */
+  affiliateTag: string;
+  /** Affiliate's wallet address */
+  affiliate: PublicKey;
+  /** When the link was created */
+  createdAt: BN;
+  /** Total clicks on this link */
+  clickCount: BN;
+  /** Total conversions from this link */
+  conversionCount: BN;
+  /** Total commission earned */
+  totalCommission: BN;
+  /** Whether the link is active */
+  isActive: boolean;
+}
+
+/** Conversion record from a referral */
+export interface ConversionRecord {
+  /** Unique conversion ID */
+  id: string;
+  /** Link that generated this conversion */
+  linkId: string;
+  /** Purchase amount in Cred */
+  amount: BN;
+  /** Commission amount earned */
+  commission: BN;
+  /** Proof of conversion (e.g., transaction signature) */
+  proof: string;
+  /** When the conversion occurred */
+  convertedAt: BN;
+  /** Whether commission has been claimed */
+  claimed: boolean;
+}
+
+/** Affiliate statistics */
+export interface AffiliateStats {
+  /** Affiliate's wallet address */
+  affiliate: PublicKey;
+  /** Total tracked links created */
+  totalLinks: BN;
+  /** Total clicks across all links */
+  totalClicks: BN;
+  /** Total conversions */
+  totalConversions: BN;
+  /** Total commission earned (all time) */
+  totalEarned: BN;
+  /** Unclaimed commission balance */
+  unclaimedBalance: BN;
+  /** Average conversion rate (basis points) */
+  conversionRateBps: number;
+}
+
+// ============================================================================
+// TYPES - Attention Capture Module
+// ============================================================================
+
+/** User's ad profile and preferences */
+export interface AdProfile {
+  /** User's wallet address */
+  user: PublicKey;
+  /** Ad categories user is interested in */
+  preferredCategories: string[];
+  /** Ad categories user wants to avoid */
+  blockedCategories: string[];
+  /** Maximum ads per day */
+  dailyAdLimit: number;
+  /** Minimum reward per view (in Cred) */
+  minRewardPerView: BN;
+  /** Whether the profile is active */
+  isActive: boolean;
+  /** When the profile was created */
+  createdAt: BN;
+  /** Last updated timestamp */
+  updatedAt: BN;
+}
+
+/** Advertisement */
+export interface Ad {
+  /** Unique ad ID */
+  id: string;
+  /** Advertiser's wallet address */
+  advertiser: PublicKey;
+  /** Ad title */
+  title: string;
+  /** Ad description */
+  description: string;
+  /** Content URL (image, video, etc.) */
+  contentUrl: string;
+  /** Target URL when clicked */
+  targetUrl: string;
+  /** Ad category */
+  category: string;
+  /** Reward per verified view (in Cred) */
+  rewardPerView: BN;
+  /** Total budget remaining */
+  remainingBudget: BN;
+  /** Required view duration (seconds) */
+  minViewDuration: number;
+  /** When the ad expires */
+  expiresAt: BN;
+  /** Whether the ad is active */
+  isActive: boolean;
+}
+
+/** Ad preference configuration */
+export interface AdPreferences {
+  /** Categories to receive ads from */
+  categories: string[];
+  /** Categories to block */
+  blockedCategories: string[];
+  /** Max ads per day (0 = unlimited) */
+  dailyLimit: number;
+  /** Minimum Cred reward to show ad */
+  minReward: BN;
+}
+
+/** Verification of ad view */
+export interface ViewVerification {
+  /** Unique view ID */
+  id: string;
+  /** User who viewed */
+  user: PublicKey;
+  /** Ad that was viewed */
+  adId: string;
+  /** Duration of view (seconds) */
+  viewDuration: number;
+  /** Whether view was verified */
+  verified: boolean;
+  /** Reward earned (if verified) */
+  rewardEarned: BN;
+  /** Verification timestamp */
+  verifiedAt: BN;
+  /** Proof of view */
+  proof: string;
+}
+
+// ============================================================================
+// TYPES - Data Capture Module
+// ============================================================================
+
+/** Data type classification */
+export type DataType = 
+  | 'location'
+  | 'browsing'
+  | 'purchase'
+  | 'social'
+  | 'health'
+  | 'financial'
+  | 'preferences'
+  | 'demographics'
+  | 'behavioral'
+  | 'custom';
+
+/** Data pricing configuration for a user */
+export interface DataPricingConfig {
+  /** User's wallet address */
+  user: PublicKey;
+  /** Pricing per data type (in Cred per access) */
+  pricing: Map<DataType, BN>;
+  /** Data types available for licensing */
+  availableTypes: DataType[];
+  /** Data types user refuses to share */
+  blockedTypes: DataType[];
+  /** Whether pricing is active */
+  isActive: boolean;
+  /** When config was created */
+  createdAt: BN;
+  /** Last updated timestamp */
+  updatedAt: BN;
+}
+
+/** Data license terms */
+export interface DataLicenseTerms {
+  /** Duration of license (seconds) */
+  durationSeconds: BN;
+  /** Whether buyer can re-share */
+  allowReshare: boolean;
+  /** Maximum times data can be accessed */
+  maxAccessCount: number;
+  /** Specific use cases allowed */
+  allowedUseCases: string[];
+  /** Geographic restrictions */
+  geoRestrictions: string[];
+}
+
+/** Active data license */
+export interface DataLicense {
+  /** Unique license ID */
+  id: string;
+  /** Data owner */
+  owner: PublicKey;
+  /** Data buyer/licensee */
+  buyer: PublicKey;
+  /** Type of data licensed */
+  dataType: DataType;
+  /** License terms */
+  terms: DataLicenseTerms;
+  /** Price paid (in Cred) */
+  pricePaid: BN;
+  /** When license was granted */
+  grantedAt: BN;
+  /** When license expires */
+  expiresAt: BN;
+  /** Number of times accessed */
+  accessCount: number;
+  /** Whether license is active */
+  isActive: boolean;
+  /** Whether license was revoked */
+  revoked: boolean;
+}
+
+/** Data licensing statistics */
+export interface DataStats {
+  /** User's wallet address */
+  user: PublicKey;
+  /** Total active licenses */
+  activeLicenses: BN;
+  /** Total revoked licenses */
+  revokedLicenses: BN;
+  /** Total revenue earned (all time) */
+  totalRevenue: BN;
+  /** Unclaimed revenue balance */
+  unclaimedRevenue: BN;
+  /** Revenue breakdown by data type */
+  revenueByType: Map<DataType, BN>;
+  /** Most popular data type */
+  topDataType: DataType | null;
+  /** Average license duration */
+  avgLicenseDuration: BN;
+}
+
+// ============================================================================
+// REFERRAL CAPTURE MODULE
+// ============================================================================
+
+/**
+ * Referral Capture Module - Affiliate link tracking and commission distribution
+ * 
+ * Enables users to earn Cred by referring purchases through tracked links.
+ * Commissions are automatically captured to the affiliate's vault.
+ */
+export class ReferralCaptureModule {
+  constructor(private readonly loop: Loop) {}
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Link Management
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Create a tracked affiliate link
+   * 
+   * @param originalUrl - The URL to track (e.g., merchant product page)
+   * @param affiliateTag - Unique tag for attribution
+   * @returns TrackedLink with unique ID for sharing
+   * 
+   * @example
+   * ```typescript
+   * const link = await loop.referral.trackLink(
+   *   'https://merchant.com/product/123',
+   *   'burt-affiliate-2024'
+   * );
+   * console.log(link.id); // Share this link
+   * ```
+   */
+  async trackLink(originalUrl: string, affiliateTag: string): Promise<TrackedLink> {
+    throw new Error('Not yet implemented: trackLink');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Conversion Tracking
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Register a conversion from a tracked link
+   * 
+   * Called by the merchant integration when a purchase occurs.
+   * 
+   * @param linkId - The tracked link ID that generated the conversion
+   * @param amount - Purchase amount (in Cred)
+   * @param proof - Proof of purchase (e.g., transaction signature)
+   * @returns ConversionRecord with commission details
+   * 
+   * @example
+   * ```typescript
+   * const conversion = await loop.referral.registerConversion(
+   *   'link_abc123',
+   *   new BN(50_000_000), // 50 Cred purchase
+   *   'tx_signature_here'
+   * );
+   * console.log(conversion.commission); // Commission earned
+   * ```
+   */
+  async registerConversion(
+    linkId: string,
+    amount: BN,
+    proof: string
+  ): Promise<ConversionRecord> {
+    throw new Error('Not yet implemented: registerConversion');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Commission Management
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Claim earned commission from conversions
+   * 
+   * Captures commission to the user's vault as Cred.
+   * 
+   * @param user - Affiliate claiming commission (signer)
+   * @param conversionIds - IDs of conversions to claim (or empty for all unclaimed)
+   * @returns Transaction signature
+   * 
+   * @example
+   * ```typescript
+   * const sig = await loop.referral.claimCommission(
+   *   wallet.publicKey,
+   *   ['conv_1', 'conv_2']
+   * );
+   * ```
+   */
+  async claimCommission(
+    user: PublicKey,
+    conversionIds: string[]
+  ): Promise<string> {
+    throw new Error('Not yet implemented: claimCommission');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Statistics
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Get affiliate statistics for a user
+   * 
+   * @param user - Affiliate's wallet address
+   * @returns AffiliateStats with performance metrics
+   * 
+   * @example
+   * ```typescript
+   * const stats = await loop.referral.getAffiliateStats(wallet.publicKey);
+   * console.log(`Earned: ${stats.totalEarned} Cred`);
+   * console.log(`Conversion rate: ${stats.conversionRateBps / 100}%`);
+   * ```
+   */
+  async getAffiliateStats(user: PublicKey): Promise<AffiliateStats> {
+    throw new Error('Not yet implemented: getAffiliateStats');
+  }
+}
+
+// ============================================================================
+// ATTENTION CAPTURE MODULE
+// ============================================================================
+
+/**
+ * Attention Capture Module - Verified ad viewing with attention rewards
+ * 
+ * Enables users to earn Cred by viewing verified advertisements.
+ * Users control their ad preferences and minimum reward requirements.
+ */
+export class AttentionCaptureModule {
+  constructor(private readonly loop: Loop) {}
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Profile Management
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Register for attention rewards and set preferences
+   * 
+   * Creates an ad profile with user's viewing preferences.
+   * 
+   * @param user - User's wallet address (signer)
+   * @param preferences - Ad viewing preferences
+   * @returns AdProfile with registration details
+   * 
+   * @example
+   * ```typescript
+   * const profile = await loop.attention.registerForAds(
+   *   wallet.publicKey,
+   *   {
+   *     categories: ['tech', 'gaming'],
+   *     blockedCategories: ['gambling'],
+   *     dailyLimit: 10,
+   *     minReward: new BN(100_000) // 0.1 Cred minimum
+   *   }
+   * );
+   * ```
+   */
+  async registerForAds(
+    user: PublicKey,
+    preferences: AdPreferences
+  ): Promise<AdProfile> {
+    throw new Error('Not yet implemented: registerForAds');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Ad Discovery
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Get available ads matching user's preferences
+   * 
+   * Returns ads that match the user's profile and haven't been viewed.
+   * 
+   * @param user - User's wallet address
+   * @returns Array of available ads
+   * 
+   * @example
+   * ```typescript
+   * const ads = await loop.attention.getAvailableAds(wallet.publicKey);
+   * for (const ad of ads) {
+   *   console.log(`${ad.title}: ${ad.rewardPerView} Cred`);
+   * }
+   * ```
+   */
+  async getAvailableAds(user: PublicKey): Promise<Ad[]> {
+    throw new Error('Not yet implemented: getAvailableAds');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // View Verification
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Submit proof of ad view for verification
+   * 
+   * Verifies that the user actually viewed the ad for the required duration.
+   * 
+   * @param user - User who viewed the ad (signer)
+   * @param adId - ID of the ad that was viewed
+   * @param viewProof - Cryptographic proof of view (duration, engagement)
+   * @returns ViewVerification with reward details
+   * 
+   * @example
+   * ```typescript
+   * const verification = await loop.attention.verifyView(
+   *   wallet.publicKey,
+   *   'ad_123',
+   *   generateViewProof(adId, startTime, endTime)
+   * );
+   * if (verification.verified) {
+   *   console.log(`Earned: ${verification.rewardEarned} Cred`);
+   * }
+   * ```
+   */
+  async verifyView(
+    user: PublicKey,
+    adId: string,
+    viewProof: string
+  ): Promise<ViewVerification> {
+    throw new Error('Not yet implemented: verifyView');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Reward Claims
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Claim attention rewards from verified views
+   * 
+   * Captures earned rewards to the user's vault as Cred.
+   * 
+   * @param user - User claiming rewards (signer)
+   * @param viewIds - IDs of verified views to claim (or empty for all unclaimed)
+   * @returns Transaction signature
+   * 
+   * @example
+   * ```typescript
+   * const sig = await loop.attention.claimAttentionReward(
+   *   wallet.publicKey,
+   *   [] // Claim all unclaimed rewards
+   * );
+   * ```
+   */
+  async claimAttentionReward(
+    user: PublicKey,
+    viewIds: string[]
+  ): Promise<string> {
+    throw new Error('Not yet implemented: claimAttentionReward');
+  }
+}
+
+// ============================================================================
+// DATA CAPTURE MODULE
+// ============================================================================
+
+/**
+ * Data Capture Module - User-controlled data licensing and monetization
+ * 
+ * Enables users to set prices for their data and earn Cred when companies
+ * license access. Users maintain full control and can revoke at any time.
+ */
+export class DataCaptureModule {
+  constructor(private readonly loop: Loop) {}
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Pricing Configuration
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Set pricing for user's data types
+   * 
+   * Configures which data types are available and their prices.
+   * 
+   * @param user - Data owner (signer)
+   * @param dataTypes - Types of data to make available
+   * @param prices - Prices per data type (in Cred per license)
+   * @returns DataPricingConfig with active settings
+   * 
+   * @example
+   * ```typescript
+   * const config = await loop.data.setDataPricing(
+   *   wallet.publicKey,
+   *   ['browsing', 'preferences'],
+   *   new Map([
+   *     ['browsing', new BN(5_000_000)],     // 5 Cred
+   *     ['preferences', new BN(2_000_000)]   // 2 Cred
+   *   ])
+   * );
+   * ```
+   */
+  async setDataPricing(
+    user: PublicKey,
+    dataTypes: DataType[],
+    prices: Map<DataType, BN>
+  ): Promise<DataPricingConfig> {
+    throw new Error('Not yet implemented: setDataPricing');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Licensing
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * License data to a buyer
+   * 
+   * Grants a time-limited license to access specific data type.
+   * 
+   * @param user - Data owner (signer)
+   * @param buyer - Buyer's wallet address
+   * @param dataType - Type of data being licensed
+   * @param terms - License terms and conditions
+   * @returns DataLicense with access details
+   * 
+   * @example
+   * ```typescript
+   * const license = await loop.data.licenseData(
+   *   wallet.publicKey,
+   *   buyerPubkey,
+   *   'browsing',
+   *   {
+   *     durationSeconds: new BN(30 * 24 * 60 * 60), // 30 days
+   *     allowReshare: false,
+   *     maxAccessCount: 100,
+   *     allowedUseCases: ['analytics', 'personalization'],
+   *     geoRestrictions: []
+   *   }
+   * );
+   * ```
+   */
+  async licenseData(
+    user: PublicKey,
+    buyer: PublicKey,
+    dataType: DataType,
+    terms: DataLicenseTerms
+  ): Promise<DataLicense> {
+    throw new Error('Not yet implemented: licenseData');
+  }
+
+  /**
+   * Revoke an active data license
+   * 
+   * Immediately terminates buyer's access to the licensed data.
+   * May trigger partial refund depending on terms.
+   * 
+   * @param user - Data owner (signer)
+   * @param licenseId - ID of license to revoke
+   * @returns Transaction signature
+   * 
+   * @example
+   * ```typescript
+   * const sig = await loop.data.revokeDataLicense(
+   *   wallet.publicKey,
+   *   'license_abc123'
+   * );
+   * ```
+   */
+  async revokeDataLicense(
+    user: PublicKey,
+    licenseId: string
+  ): Promise<string> {
+    throw new Error('Not yet implemented: revokeDataLicense');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Revenue Management
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Claim earned data licensing revenue
+   * 
+   * Captures accumulated revenue to the user's vault as Cred.
+   * 
+   * @param user - Data owner claiming revenue (signer)
+   * @returns Transaction signature
+   * 
+   * @example
+   * ```typescript
+   * const sig = await loop.data.claimDataRevenue(wallet.publicKey);
+   * ```
+   */
+  async claimDataRevenue(user: PublicKey): Promise<string> {
+    throw new Error('Not yet implemented: claimDataRevenue');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Statistics
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Get data licensing statistics for a user
+   * 
+   * @param user - Data owner's wallet address
+   * @returns DataStats with revenue metrics
+   * 
+   * @example
+   * ```typescript
+   * const stats = await loop.data.getDataStats(wallet.publicKey);
+   * console.log(`Total revenue: ${stats.totalRevenue} Cred`);
+   * console.log(`Active licenses: ${stats.activeLicenses}`);
+   * ```
+   */
+  async getDataStats(user: PublicKey): Promise<DataStats> {
+    throw new Error('Not yet implemented: getDataStats');
+  }
+}
+
 // SDK CONFIG
 // ============================================================================
 
@@ -519,6 +1168,15 @@ export class Loop {
   /** Agent Value Protocol (loop-avp program) */
   public readonly avp: AvpModule;
 
+  /** Referral Capture Module - Affiliate tracking and commissions */
+  public readonly referral: ReferralCaptureModule;
+
+  /** Attention Capture Module - Verified ad viewing rewards */
+  public readonly attention: AttentionCaptureModule;
+
+  /** Data Capture Module - User-controlled data monetization */
+  public readonly data: DataCaptureModule;
+
   constructor(config: LoopConfig) {
     this.connection = config.connection;
     this.wallet = config.wallet;
@@ -528,6 +1186,10 @@ export class Loop {
     this.oxo = new OxoModule(this);
     this.vtp = new VtpModule(this);
     this.avp = new AvpModule(this);
+
+    this.referral = new ReferralCaptureModule(this);
+    this.attention = new AttentionCaptureModule(this);
+    this.data = new DataCaptureModule(this);
   }
 
   /** Get program IDs */
