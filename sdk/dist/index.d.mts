@@ -755,6 +755,182 @@ declare class DataCaptureModule {
      */
     getDataStats(user: PublicKey): Promise<DataStats>;
 }
+/** Resource profile for compute providers */
+interface ResourceProfile {
+    provider: PublicKey;
+    cpuCores: number;
+    gpuUnits: number;
+    storageGb: number;
+    bandwidthMbps: number;
+    registeredAt: BN;
+    isAvailable: boolean;
+    tasksCompleted: BN;
+    rewardsEarned: BN;
+    bump: number;
+}
+/** Resource specification for registration */
+interface ResourceSpec {
+    cpu: number;
+    gpu: number;
+    storage: number;
+    bandwidth: number;
+}
+/** Task acceptance record */
+interface TaskAcceptance {
+    taskId: string;
+    provider: PublicKey;
+    bidAmount: BN;
+    acceptedAt: BN;
+    deadline: BN;
+    status: TaskStatus;
+    bump: number;
+}
+/** Task status enum */
+declare enum TaskStatus {
+    Pending = 0,
+    Completed = 1,
+    Failed = 2,
+    Disputed = 3
+}
+/** Task submission record */
+interface TaskSubmission {
+    taskId: string;
+    provider: PublicKey;
+    resultHash: Uint8Array;
+    proof: Uint8Array;
+    submittedAt: BN;
+    isVerified: boolean;
+    rewardClaimed: boolean;
+    bump: number;
+}
+/** Compute statistics for a provider */
+interface ComputeStats {
+    totalTasks: BN;
+    totalRewards: BN;
+    successRate: number;
+    avgCompletionTime: BN;
+    reputationScore: number;
+    activeTasks: number;
+}
+/** Node registration record */
+interface NodeRegistration {
+    operator: PublicKey;
+    nodeType: NodeType;
+    capabilities: string[];
+    registeredAt: BN;
+    isActive: boolean;
+    totalUptime: BN;
+    lastSeen: BN;
+    bump: number;
+}
+/** Node type enum */
+declare enum NodeType {
+    Validator = 0,
+    Relay = 1,
+    Oracle = 2,
+    Storage = 3,
+    Compute = 4
+}
+/** Vote submission record */
+interface VoteSubmission {
+    voter: PublicKey;
+    proposalId: string;
+    vote: boolean;
+    weight: BN;
+    proof: Uint8Array;
+    votedAt: BN;
+    bump: number;
+}
+/** Attestation record */
+interface Attestation {
+    attester: PublicKey;
+    dataHash: Uint8Array;
+    attestationType: AttestationType;
+    attestedAt: BN;
+    expiresAt: BN | null;
+    isValid: boolean;
+    bump: number;
+}
+/** Attestation type enum */
+declare enum AttestationType {
+    DataIntegrity = 0,
+    PriceOracle = 1,
+    IdentityVerification = 2,
+    EventWitness = 3
+}
+/** Network statistics for a node */
+interface NetworkStats {
+    totalVotes: BN;
+    totalAttestations: BN;
+    participationRewards: BN;
+    uptimePercentage: number;
+    currentStreak: number;
+    slashCount: number;
+}
+/** Exported behavior model */
+interface BehaviorModel {
+    owner: PublicKey;
+    modelId: string;
+    skillType: SkillType;
+    anonymizationLevel: AnonymizationLevel;
+    modelHash: Uint8Array;
+    createdAt: BN;
+    version: number;
+    isLicensable: boolean;
+    minLicensePrice: BN;
+    totalRevenue: BN;
+    bump: number;
+}
+/** Skill type enum */
+declare enum SkillType {
+    Trading = 0,
+    ContentCreation = 1,
+    DataAnalysis = 2,
+    CustomerService = 3,
+    CodeGeneration = 4,
+    LanguageTranslation = 5,
+    ImageRecognition = 6,
+    Custom = 7
+}
+/** Anonymization level for behavior models */
+declare enum AnonymizationLevel {
+    None = 0,
+    Basic = 1,
+    Differential = 2,
+    Federated = 3
+}
+/** Skill license record */
+interface SkillLicense {
+    licenseId: string;
+    licensor: PublicKey;
+    licensee: PublicKey;
+    modelId: string;
+    termsHash: Uint8Array;
+    pricePaid: BN;
+    startedAt: BN;
+    expiresAt: BN | null;
+    isActive: boolean;
+    usageCount: BN;
+    usageLimit: BN | null;
+    bump: number;
+}
+/** License terms */
+interface LicenseTerms {
+    duration: BN;
+    price: BN;
+    usageLimit: BN;
+    allowSublicense: boolean;
+    commercialUse: boolean;
+}
+/** Skill statistics for a user */
+interface SkillStats {
+    totalModels: BN;
+    totalLicenses: BN;
+    totalRevenue: BN;
+    activeLicenses: number;
+    avgLicensePrice: BN;
+    topSkillType: SkillType;
+}
 interface LoopConfig {
     connection: Connection;
     wallet?: anchor.Wallet;
@@ -815,6 +991,20 @@ declare class Loop {
     readonly vtp: VtpModule;
     /** Agent Value Protocol (loop-avp program) */
     readonly avp: AvpModule;
+    /** Liquidity capture operations */
+    readonly liquidity: LiquidityCapture;
+    /** Energy capture operations */
+    readonly energy: EnergyCapture;
+    /** Social capture operations */
+    readonly social: SocialCapture;
+    /** Insurance capture operations */
+    readonly insurance: InsuranceCapture;
+    /** Compute Capture - Monetize computational resources */
+    readonly compute: ComputeCaptureModule;
+    /** Network Capture - Monetize network participation */
+    readonly network: NetworkCaptureModule;
+    /** Skill Capture - Monetize behavioral patterns and skills */
+    readonly skill: SkillCaptureModule;
     /** Referral Capture Module - Affiliate tracking and commissions */
     readonly referral: ReferralCaptureModule;
     /** Attention Capture Module - Verified ad viewing rewards */
@@ -1415,5 +1605,1249 @@ declare class AvpModule {
     private createInstruction;
     private deserializeAgentIdentity;
 }
+/**
+ * Compute Capture Module - Monetize computational resources
+ *
+ * Allows users to register their compute resources (CPU, GPU, storage, bandwidth)
+ * and earn rewards by completing computational tasks for the network.
+ *
+ * @example
+ * ```typescript
+ * // Register compute resources
+ * const profile = await loop.compute.registerResources(user, {
+ *   cpu: 8,
+ *   gpu: 2,
+ *   storage: 1000,
+ *   bandwidth: 1000
+ * });
+ *
+ * // Accept and complete a task
+ * await loop.compute.acceptTask(user, 'task-123', new BN(100));
+ * await loop.compute.submitTaskResult(user, 'task-123', resultHash, proof);
+ * await loop.compute.claimComputeReward(user, ['task-123']);
+ * ```
+ */
+declare class ComputeCaptureModule {
+    private readonly loop;
+    constructor(loop: Loop);
+    /**
+     * Get resource profile PDA for a provider
+     * @param provider - Provider's public key
+     */
+    getResourceProfileAddress(provider: PublicKey): [PublicKey, number];
+    /**
+     * Get task acceptance PDA
+     * @param provider - Provider's public key
+     * @param taskId - Task identifier
+     */
+    getTaskAcceptanceAddress(provider: PublicKey, taskId: string): [PublicKey, number];
+    /**
+     * Get task submission PDA
+     * @param provider - Provider's public key
+     * @param taskId - Task identifier
+     */
+    getTaskSubmissionAddress(provider: PublicKey, taskId: string): [PublicKey, number];
+    /**
+     * Register computational resources for task processing
+     *
+     * Creates a resource profile that advertises available compute capacity
+     * to the network. Resources can be updated later.
+     *
+     * @param user - Resource provider (signer, payer)
+     * @param resources - Resource specification
+     * @returns Transaction signature
+     *
+     * @example
+     * ```typescript
+     * const profile = await loop.compute.registerResources(wallet.publicKey, {
+     *   cpu: 8,      // 8 CPU cores
+     *   gpu: 2,      // 2 GPU units
+     *   storage: 500, // 500 GB
+     *   bandwidth: 1000 // 1000 Mbps
+     * });
+     * ```
+     */
+    registerResources(user: PublicKey, resources: ResourceSpec): Promise<TransactionInstruction>;
+    /**
+     * Accept a computational task with a bid
+     *
+     * Provider commits to completing the task within the deadline.
+     * Bid amount is the requested reward in Cred.
+     *
+     * @param user - Task provider (signer)
+     * @param taskId - Unique task identifier
+     * @param bid - Bid amount in Cred (smallest unit)
+     * @returns Transaction signature
+     *
+     * @example
+     * ```typescript
+     * const acceptance = await loop.compute.acceptTask(
+     *   wallet.publicKey,
+     *   'task-abc123',
+     *   new BN(50_000_000) // 50 Cred bid
+     * );
+     * ```
+     */
+    acceptTask(user: PublicKey, taskId: string, bid: BN): Promise<TransactionInstruction>;
+    /**
+     * Submit completed task result with proof
+     *
+     * Provider submits the result hash and proof of computation.
+     * Proof can be a ZK-proof, signature, or other verification method.
+     *
+     * @param user - Task provider (signer)
+     * @param taskId - Task identifier
+     * @param resultHash - 32-byte hash of the result data
+     * @param proof - Proof of correct computation
+     * @returns Transaction signature
+     *
+     * @example
+     * ```typescript
+     * const resultHash = sha256(resultData);
+     * const proof = generateZkProof(computation);
+     *
+     * const submission = await loop.compute.submitTaskResult(
+     *   wallet.publicKey,
+     *   'task-abc123',
+     *   resultHash,
+     *   proof
+     * );
+     * ```
+     */
+    submitTaskResult(user: PublicKey, taskId: string, resultHash: Uint8Array, proof: Uint8Array): Promise<TransactionInstruction>;
+    /**
+     * Claim rewards for completed tasks
+     *
+     * Batch claim rewards for multiple verified task completions.
+     * Tasks must be verified before rewards can be claimed.
+     *
+     * @param user - Provider claiming rewards (signer)
+     * @param taskIds - Array of completed task IDs
+     * @returns Transaction signature
+     *
+     * @example
+     * ```typescript
+     * const signature = await loop.compute.claimComputeReward(
+     *   wallet.publicKey,
+     *   ['task-1', 'task-2', 'task-3']
+     * );
+     * ```
+     */
+    claimComputeReward(user: PublicKey, taskIds: string[]): Promise<TransactionInstruction>;
+    /**
+     * Get compute statistics for a provider
+     *
+     * Returns aggregated stats including total tasks, rewards,
+     * success rate, and reputation score.
+     *
+     * @param user - Provider's public key
+     * @returns Compute statistics
+     *
+     * @example
+     * ```typescript
+     * const stats = await loop.compute.getComputeStats(wallet.publicKey);
+     * console.log(`Tasks completed: ${stats.totalTasks}`);
+     * console.log(`Total rewards: ${stats.totalRewards} Cred`);
+     * console.log(`Success rate: ${stats.successRate / 100}%`);
+     * ```
+     */
+    getComputeStats(user: PublicKey): Promise<ComputeStats>;
+    private createInstruction;
+    private deserializeComputeStats;
+}
+/**
+ * Network Capture Module - Monetize network participation
+ *
+ * Allows users to register as network nodes and earn rewards for
+ * participating in governance, attestations, and network operations.
+ *
+ * @example
+ * ```typescript
+ * // Register as a validator node
+ * await loop.network.registerNode(user, NodeType.Validator, ['consensus', 'relay']);
+ *
+ * // Participate in governance
+ * await loop.network.submitVote(user, 'prop-123', true, proof);
+ *
+ * // Submit attestation
+ * await loop.network.submitAttestation(user, dataHash, AttestationType.PriceOracle);
+ * ```
+ */
+declare class NetworkCaptureModule {
+    private readonly loop;
+    constructor(loop: Loop);
+    /**
+     * Get node registration PDA
+     * @param operator - Node operator's public key
+     */
+    getNodeRegistrationAddress(operator: PublicKey): [PublicKey, number];
+    /**
+     * Get vote submission PDA
+     * @param voter - Voter's public key
+     * @param proposalId - Proposal identifier
+     */
+    getVoteAddress(voter: PublicKey, proposalId: string): [PublicKey, number];
+    /**
+     * Get attestation PDA
+     * @param attester - Attester's public key
+     * @param dataHash - Hash of attested data
+     */
+    getAttestationAddress(attester: PublicKey, dataHash: Uint8Array): [PublicKey, number];
+    /**
+     * Register as a network node
+     *
+     * Creates a node registration that allows participation in
+     * network operations and governance.
+     *
+     * @param user - Node operator (signer, payer)
+     * @param nodeType - Type of node (Validator, Relay, Oracle, etc.)
+     * @param capabilities - List of capabilities (max 10)
+     * @returns Transaction signature
+     *
+     * @example
+     * ```typescript
+     * const registration = await loop.network.registerNode(
+     *   wallet.publicKey,
+     *   NodeType.Oracle,
+     *   ['price_feed', 'data_attestation']
+     * );
+     * ```
+     */
+    registerNode(user: PublicKey, nodeType: NodeType, capabilities: string[]): Promise<TransactionInstruction>;
+    /**
+     * Submit a governance vote
+     *
+     * Cast a vote on a protocol proposal. Vote weight is based on
+     * veOXO balance at time of snapshot.
+     *
+     * @param user - Voter (signer)
+     * @param proposalId - Proposal identifier
+     * @param vote - Vote value (true = yes, false = no)
+     * @param proof - Proof of voting eligibility (veOXO snapshot proof)
+     * @returns Transaction signature
+     *
+     * @example
+     * ```typescript
+     * const voteSubmission = await loop.network.submitVote(
+     *   wallet.publicKey,
+     *   'prop-upgrade-v2',
+     *   true, // voting yes
+     *   eligibilityProof
+     * );
+     * ```
+     */
+    submitVote(user: PublicKey, proposalId: string, vote: boolean, proof: Uint8Array): Promise<TransactionInstruction>;
+    /**
+     * Submit a data attestation
+     *
+     * Attest to the validity/existence of off-chain data.
+     * Used for oracles, identity verification, and event witnessing.
+     *
+     * @param user - Attester (signer)
+     * @param dataHash - 32-byte hash of data being attested
+     * @param attestationType - Type of attestation
+     * @returns Transaction signature
+     *
+     * @example
+     * ```typescript
+     * const attestation = await loop.network.submitAttestation(
+     *   wallet.publicKey,
+     *   sha256(priceData),
+     *   AttestationType.PriceOracle
+     * );
+     * ```
+     */
+    submitAttestation(user: PublicKey, dataHash: Uint8Array, attestationType: AttestationType): Promise<TransactionInstruction>;
+    /**
+     * Claim participation rewards
+     *
+     * Batch claim rewards for network participation activities
+     * (voting, attestations, uptime).
+     *
+     * @param user - Node operator claiming rewards (signer)
+     * @param activityIds - Array of activity IDs to claim
+     * @returns Transaction signature
+     *
+     * @example
+     * ```typescript
+     * const signature = await loop.network.claimParticipationReward(
+     *   wallet.publicKey,
+     *   ['vote-1', 'attest-2', 'uptime-3']
+     * );
+     * ```
+     */
+    claimParticipationReward(user: PublicKey, activityIds: string[]): Promise<TransactionInstruction>;
+    /**
+     * Get network statistics for a node
+     *
+     * Returns aggregated stats including votes, attestations,
+     * rewards, and uptime percentage.
+     *
+     * @param user - Node operator's public key
+     * @returns Network statistics
+     *
+     * @example
+     * ```typescript
+     * const stats = await loop.network.getNetworkStats(wallet.publicKey);
+     * console.log(`Total votes: ${stats.totalVotes}`);
+     * console.log(`Uptime: ${stats.uptimePercentage / 100}%`);
+     * ```
+     */
+    getNetworkStats(user: PublicKey): Promise<NetworkStats>;
+    private createInstruction;
+    private deserializeNetworkStats;
+}
+/**
+ * Skill Capture Module - Monetize behavioral patterns and skills
+ *
+ * Allows users to export their behavioral models, license them to others,
+ * and earn passive income from their skills and patterns.
+ *
+ * @example
+ * ```typescript
+ * // Export a trading behavior model
+ * const model = await loop.skill.exportBehaviorModel(
+ *   user,
+ *   SkillType.Trading,
+ *   AnonymizationLevel.Differential
+ * );
+ *
+ * // License to a buyer
+ * await loop.skill.licenseSkill(user, buyer, model.modelId, terms);
+ *
+ * // Claim accumulated revenue
+ * await loop.skill.claimSkillRevenue(user);
+ * ```
+ */
+declare class SkillCaptureModule {
+    private readonly loop;
+    constructor(loop: Loop);
+    /**
+     * Get behavior model PDA
+     * @param owner - Model owner's public key
+     * @param modelId - Model identifier
+     */
+    getBehaviorModelAddress(owner: PublicKey, modelId: string): [PublicKey, number];
+    /**
+     * Get skill license PDA
+     * @param licensor - License issuer's public key
+     * @param licenseId - License identifier
+     */
+    getSkillLicenseAddress(licensor: PublicKey, licenseId: string): [PublicKey, number];
+    /**
+     * Get skill stats PDA
+     * @param owner - Owner's public key
+     */
+    getSkillStatsAddress(owner: PublicKey): [PublicKey, number];
+    /**
+     * Export a behavior model for a specific skill
+     *
+     * Creates a portable model from the user's behavioral data.
+     * Anonymization level determines privacy protection.
+     *
+     * @param user - Model owner (signer, payer)
+     * @param skillType - Type of skill to export
+     * @param anonymizationLevel - Level of privacy protection
+     * @returns Transaction signature
+     *
+     * @example
+     * ```typescript
+     * const model = await loop.skill.exportBehaviorModel(
+     *   wallet.publicKey,
+     *   SkillType.DataAnalysis,
+     *   AnonymizationLevel.Federated
+     * );
+     * ```
+     */
+    exportBehaviorModel(user: PublicKey, skillType: SkillType, anonymizationLevel: AnonymizationLevel): Promise<TransactionInstruction>;
+    /**
+     * License a skill model to a buyer
+     *
+     * Creates a license granting the buyer usage rights to the model.
+     * License terms define duration, usage limits, and pricing.
+     *
+     * @param user - Model owner/licensor (signer)
+     * @param buyer - Buyer's public key
+     * @param modelId - Model to license
+     * @param terms - License terms
+     * @returns Transaction signature
+     *
+     * @example
+     * ```typescript
+     * const license = await loop.skill.licenseSkill(
+     *   wallet.publicKey,
+     *   buyerPubkey,
+     *   'model_123',
+     *   {
+     *     duration: new BN(365 * 24 * 60 * 60), // 1 year
+     *     price: new BN(100_000_000), // 100 Cred
+     *     usageLimit: new BN(0), // unlimited
+     *     allowSublicense: false,
+     *     commercialUse: true
+     *   }
+     * );
+     * ```
+     */
+    licenseSkill(user: PublicKey, buyer: PublicKey, modelId: string, terms: LicenseTerms): Promise<TransactionInstruction>;
+    /**
+     * Revoke an existing skill license
+     *
+     * Terminates a license before its expiry. May require
+     * refund depending on license terms.
+     *
+     * @param user - Licensor (signer)
+     * @param licenseId - License to revoke
+     * @returns Transaction signature
+     *
+     * @example
+     * ```typescript
+     * const signature = await loop.skill.revokeSkillLicense(
+     *   wallet.publicKey,
+     *   'lic_123'
+     * );
+     * ```
+     */
+    revokeSkillLicense(user: PublicKey, licenseId: string): Promise<TransactionInstruction>;
+    /**
+     * Claim accumulated skill licensing revenue
+     *
+     * Withdraws all unclaimed revenue from skill licenses
+     * to the user's vault.
+     *
+     * @param user - Model owner (signer)
+     * @returns Transaction signature
+     *
+     * @example
+     * ```typescript
+     * const signature = await loop.skill.claimSkillRevenue(wallet.publicKey);
+     * ```
+     */
+    claimSkillRevenue(user: PublicKey): Promise<TransactionInstruction>;
+    /**
+     * Get skill statistics for a user
+     *
+     * Returns aggregated stats including models, licenses,
+     * revenue, and top-performing skills.
+     *
+     * @param user - User's public key
+     * @returns Skill statistics
+     *
+     * @example
+     * ```typescript
+     * const stats = await loop.skill.getSkillStats(wallet.publicKey);
+     * console.log(`Total models: ${stats.totalModels}`);
+     * console.log(`Total revenue: ${stats.totalRevenue} Cred`);
+     * console.log(`Active licenses: ${stats.activeLicenses}`);
+     * ```
+     */
+    getSkillStats(user: PublicKey): Promise<SkillStats>;
+    private createInstruction;
+    private deserializeSkillStats;
+}
 
-export { type Ad, type AdPreferences, type AdProfile, type AffiliateStats, type AgentIdentity, type AgentPermission, AgentStatus, AgentType, AttentionCaptureModule, AvpModule, type BondingCurve, CONSTANTS, type CapabilityId, type CaptureAuthority, CaptureType, type ConversionRecord, type CredConfig, CredModule, DataCaptureModule, type DataLicense, type DataLicenseTerms, type DataPricingConfig, type DataStats, type DataType, type Escrow, EscrowStatus, type Heir, type InheritanceConfig, type InheritancePlan, Loop, type LoopConfig, LoopPDA, type OxoConfig, OxoModule, PROGRAM_IDS, PermissionLevel, ReferralCaptureModule, type ReleaseCondition, type ReserveStatus, type StackRecord, type TrackedLink, type Vault, VaultModule, type VeOxoPosition, type ViewVerification, type VtpConfig, VtpModule, Loop as default };
+/** Strategy type for liquidity deployment */
+declare enum LiquidityStrategy {
+    Conservative = 0,
+    Balanced = 1,
+    Aggressive = 2,
+    Custom = 3
+}
+/** Risk tolerance level */
+declare enum RiskTolerance {
+    Low = 0,
+    Medium = 1,
+    High = 2
+}
+/** Position status */
+declare enum PositionStatus {
+    Active = 0,
+    Rebalancing = 1,
+    Withdrawing = 2,
+    Closed = 3
+}
+/** Deployed capital position */
+interface DeploymentPosition {
+    /** Unique position identifier */
+    positionId: string;
+    /** User who deployed the capital */
+    user: PublicKey;
+    /** Amount deployed in Cred */
+    amount: BN;
+    /** Current strategy */
+    strategy: LiquidityStrategy;
+    /** Risk tolerance setting */
+    riskTolerance: RiskTolerance;
+    /** Position status */
+    status: PositionStatus;
+    /** Unix timestamp of deployment */
+    deployedAt: BN;
+    /** Cumulative yield earned */
+    yieldEarned: BN;
+    /** Current APY in basis points */
+    currentApy: number;
+}
+/** Result of a rebalance operation */
+interface RebalanceResult {
+    /** Position that was rebalanced */
+    positionId: string;
+    /** Previous strategy */
+    previousStrategy: LiquidityStrategy;
+    /** New strategy */
+    newStrategy: LiquidityStrategy;
+    /** Timestamp of rebalance */
+    rebalancedAt: BN;
+    /** Estimated new APY */
+    estimatedApy: number;
+    /** Transaction signature */
+    signature: string;
+}
+/** Result of a withdrawal */
+interface WithdrawalResult {
+    /** Position withdrawn from */
+    positionId: string;
+    /** Amount withdrawn */
+    amountWithdrawn: BN;
+    /** Remaining balance in position */
+    remainingBalance: BN;
+    /** Whether position is closed */
+    positionClosed: boolean;
+    /** Transaction signature */
+    signature: string;
+}
+/** Liquidity statistics for a user */
+interface LiquidityStats {
+    /** Total capital deployed */
+    totalDeployed: BN;
+    /** Total yield earned all-time */
+    totalYieldEarned: BN;
+    /** Pending yield to claim */
+    pendingYield: BN;
+    /** Number of active positions */
+    activePositions: number;
+    /** Average APY across positions */
+    averageApy: number;
+    /** Protocol rank (percentile) */
+    protocolRank: number;
+}
+/** Type of energy device */
+declare enum DeviceType {
+    SolarPanel = 0,
+    Battery = 1,
+    EVCharger = 2,
+    SmartThermostat = 3,
+    SmartMeter = 4,
+    HeatPump = 5
+}
+/** Device capabilities */
+interface DeviceCapabilities {
+    /** Can generate energy */
+    canGenerate: boolean;
+    /** Can store energy */
+    canStore: boolean;
+    /** Can consume energy */
+    canConsume: boolean;
+    /** Can shift load timing */
+    canShiftLoad: boolean;
+    /** Maximum power in watts */
+    maxPowerWatts: number;
+    /** Storage capacity in watt-hours (if applicable) */
+    storageCapacityWh: number | null;
+}
+/** Energy arbitrage action */
+declare enum ArbitrageAction {
+    /** Store energy during low prices */
+    Store = 0,
+    /** Discharge during high prices */
+    Discharge = 1,
+    /** Shift load to cheaper period */
+    ShiftLoad = 2,
+    /** Sell back to grid */
+    SellToGrid = 3
+}
+/** Device registration result */
+interface DeviceRegistration {
+    /** Unique device identifier */
+    deviceId: string;
+    /** Device type */
+    deviceType: DeviceType;
+    /** Device capabilities */
+    capabilities: DeviceCapabilities;
+    /** Registration timestamp */
+    registeredAt: BN;
+    /** Device status */
+    isActive: boolean;
+}
+/** Energy usage report */
+interface UsageReport {
+    /** Device that reported */
+    deviceId: string;
+    /** Energy consumed in watt-hours */
+    energyConsumedWh: BN;
+    /** Energy generated in watt-hours */
+    energyGeneratedWh: BN;
+    /** Net energy (generated - consumed) */
+    netEnergyWh: BN;
+    /** Value captured in Cred */
+    valueCaptured: BN;
+    /** Reporting period start */
+    periodStart: BN;
+    /** Reporting period end */
+    periodEnd: BN;
+}
+/** Arbitrage execution result */
+interface ArbitrageExecution {
+    /** Device used */
+    deviceId: string;
+    /** Action taken */
+    action: ArbitrageAction;
+    /** Energy amount in watt-hours */
+    energyAmountWh: BN;
+    /** Price at execution (Cred per kWh) */
+    pricePerKwh: BN;
+    /** Revenue/savings in Cred */
+    revenue: BN;
+    /** Execution timestamp */
+    executedAt: BN;
+    /** Transaction signature */
+    signature: string;
+}
+/** Energy statistics for a user */
+interface EnergyStats {
+    /** Total devices registered */
+    totalDevices: number;
+    /** Total energy generated all-time (Wh) */
+    totalEnergyGeneratedWh: BN;
+    /** Total energy consumed all-time (Wh) */
+    totalEnergyConsumedWh: BN;
+    /** Total revenue earned */
+    totalRevenue: BN;
+    /** Pending revenue to claim */
+    pendingRevenue: BN;
+    /** Carbon offset in kg */
+    carbonOffsetKg: BN;
+}
+/** Introduction terms */
+interface IntroTerms {
+    /** Fee split percentage for facilitator (0-100) */
+    facilitatorFeePercent: number;
+    /** Minimum deal value to trigger fee */
+    minimumDealValue: BN;
+    /** Expiry for the intro offer */
+    expiryTimestamp: BN;
+    /** Custom terms description */
+    description: string | null;
+}
+/** Introduction outcome */
+declare enum IntroOutcome {
+    /** Intro was accepted and connected */
+    Connected = 0,
+    /** Deal was closed */
+    DealClosed = 1,
+    /** Intro was declined */
+    Declined = 2,
+    /** Intro expired */
+    Expired = 3
+}
+/** Introduction request result */
+interface IntroRequest {
+    /** Unique intro identifier */
+    introId: string;
+    /** User who facilitated */
+    facilitator: PublicKey;
+    /** Contact being introduced from */
+    fromContact: PublicKey;
+    /** Contact being introduced to */
+    toContact: PublicKey;
+    /** Terms of the introduction */
+    terms: IntroTerms;
+    /** Request timestamp */
+    requestedAt: BN;
+    /** Status */
+    isPending: boolean;
+}
+/** Introduction completion result */
+interface IntroCompletion {
+    /** Intro that was completed */
+    introId: string;
+    /** Outcome of the introduction */
+    outcome: IntroOutcome;
+    /** Deal value (if applicable) */
+    dealValue: BN | null;
+    /** Fee earned by facilitator */
+    feeEarned: BN;
+    /** Completed timestamp */
+    completedAt: BN;
+    /** Transaction signature */
+    signature: string;
+}
+/** Reputation stake */
+interface ReputationStake {
+    /** Stake identifier */
+    stakeId: string;
+    /** User who staked */
+    staker: PublicKey;
+    /** User being vouched for */
+    targetUser: PublicKey;
+    /** Amount staked */
+    amount: BN;
+    /** Stake timestamp */
+    stakedAt: BN;
+    /** Whether stake is active */
+    isActive: boolean;
+}
+/** Social statistics for a user */
+interface SocialStats {
+    /** Total introductions made */
+    totalIntros: number;
+    /** Successful introductions */
+    successfulIntros: number;
+    /** Total fees earned */
+    totalFeesEarned: BN;
+    /** Pending fees to claim */
+    pendingFees: BN;
+    /** Reputation score */
+    reputationScore: number;
+    /** Total reputation staked on others */
+    totalStakedOnOthers: BN;
+    /** Total reputation received from others */
+    totalStakedByOthers: BN;
+}
+/** Claim type categories */
+declare enum ClaimType {
+    /** Smart contract bug/hack */
+    SmartContractFailure = 0,
+    /** Stablecoin depeg event */
+    StablecoinDepeg = 1,
+    /** Protocol insolvency */
+    ProtocolInsolvency = 2,
+    /** Oracle manipulation */
+    OracleManipulation = 3,
+    /** Governance attack */
+    GovernanceAttack = 4
+}
+/** Vote on a claim */
+declare enum ClaimVoteType {
+    /** Approve the claim */
+    Approve = 0,
+    /** Reject the claim */
+    Reject = 1,
+    /** Abstain from voting */
+    Abstain = 2
+}
+/** Claim status */
+declare enum ClaimStatus {
+    /** Claim is pending review */
+    Pending = 0,
+    /** Claim is being voted on */
+    Voting = 1,
+    /** Claim was approved */
+    Approved = 2,
+    /** Claim was rejected */
+    Rejected = 3,
+    /** Claim was paid out */
+    PaidOut = 4
+}
+/** Pool membership result */
+interface PoolMembership {
+    /** Membership identifier */
+    membershipId: string;
+    /** Pool joined */
+    poolId: string;
+    /** User who joined */
+    user: PublicKey;
+    /** Coverage amount */
+    coverage: BN;
+    /** Premium paid */
+    premium: BN;
+    /** Membership start */
+    startedAt: BN;
+    /** Membership expiry */
+    expiresAt: BN;
+    /** Is membership active */
+    isActive: boolean;
+}
+/** Claim submission result */
+interface ClaimSubmission {
+    /** Claim identifier */
+    claimId: string;
+    /** Pool the claim is against */
+    poolId: string;
+    /** Claimant */
+    claimant: PublicKey;
+    /** Type of claim */
+    claimType: ClaimType;
+    /** Amount claimed */
+    amountClaimed: BN;
+    /** Evidence hash (IPFS/Arweave) */
+    evidenceHash: string;
+    /** Submission timestamp */
+    submittedAt: BN;
+    /** Claim status */
+    status: ClaimStatus;
+}
+/** Claim vote result */
+interface ClaimVote {
+    /** Claim being voted on */
+    claimId: string;
+    /** Voter */
+    voter: PublicKey;
+    /** Vote type */
+    vote: ClaimVoteType;
+    /** Voting power used */
+    votingPower: BN;
+    /** Vote timestamp */
+    votedAt: BN;
+    /** Transaction signature */
+    signature: string;
+}
+/** Insurance statistics for a user */
+interface InsuranceStats {
+    /** Total pools joined */
+    totalPoolsJoined: number;
+    /** Total coverage across pools */
+    totalCoverage: BN;
+    /** Total premiums paid */
+    totalPremiumsPaid: BN;
+    /** Claims filed */
+    claimsFiled: number;
+    /** Claims approved */
+    claimsApproved: number;
+    /** Total claimed amount received */
+    totalClaimedAmount: BN;
+    /** Premium returns pending */
+    pendingPremiumReturns: BN;
+}
+/**
+ * Liquidity Capture Module - Deploy and manage capital in yield strategies
+ *
+ * Captures value from DeFi liquidity provision, lending, and yield farming.
+ * Supports multiple strategies with varying risk/reward profiles.
+ */
+declare class LiquidityCapture {
+    private readonly loop;
+    constructor(loop: Loop);
+    /**
+     * Deploy capital into a yield strategy
+     *
+     * @param user - User deploying capital (signer)
+     * @param amount - Amount of Cred to deploy
+     * @param strategy - Deployment strategy
+     * @param riskTolerance - Risk tolerance level
+     * @returns Deployment position details
+     *
+     * @example
+     * ```typescript
+     * const position = await loop.liquidity.deployCapital(
+     *   userPubkey,
+     *   new BN(1000_000000), // 1000 Cred
+     *   LiquidityStrategy.Balanced,
+     *   RiskTolerance.Medium
+     * );
+     * console.log(`Deployed ${position.amount} at ${position.currentApy}% APY`);
+     * ```
+     */
+    deployCapital(user: PublicKey, amount: BN, strategy: LiquidityStrategy, riskTolerance: RiskTolerance): Promise<DeploymentPosition>;
+    /**
+     * Rebalance an existing position to a new strategy
+     *
+     * @param user - Position owner (signer)
+     * @param positionId - Position to rebalance
+     * @param newStrategy - New strategy to apply
+     * @returns Rebalance result
+     *
+     * @example
+     * ```typescript
+     * const result = await loop.liquidity.rebalance(
+     *   userPubkey,
+     *   'pos_abc123',
+     *   LiquidityStrategy.Aggressive
+     * );
+     * console.log(`New APY: ${result.estimatedApy}%`);
+     * ```
+     */
+    rebalance(user: PublicKey, positionId: string, newStrategy: LiquidityStrategy): Promise<RebalanceResult>;
+    /**
+     * Withdraw capital from a position
+     *
+     * @param user - Position owner (signer)
+     * @param positionId - Position to withdraw from
+     * @param amount - Amount to withdraw (null for full withdrawal)
+     * @returns Withdrawal result
+     *
+     * @example
+     * ```typescript
+     * // Partial withdrawal
+     * const result = await loop.liquidity.withdrawCapital(
+     *   userPubkey,
+     *   'pos_abc123',
+     *   new BN(500_000000)
+     * );
+     *
+     * // Full withdrawal
+     * const fullResult = await loop.liquidity.withdrawCapital(
+     *   userPubkey,
+     *   'pos_abc123',
+     *   null
+     * );
+     * ```
+     */
+    withdrawCapital(user: PublicKey, positionId: string, amount: BN | null): Promise<WithdrawalResult>;
+    /**
+     * Claim accumulated yield from positions
+     *
+     * @param user - Position owner (signer)
+     * @param positionIds - Positions to claim yield from
+     * @returns Transaction signature
+     *
+     * @example
+     * ```typescript
+     * const sig = await loop.liquidity.claimYield(
+     *   userPubkey,
+     *   ['pos_abc123', 'pos_def456']
+     * );
+     * ```
+     */
+    claimYield(user: PublicKey, positionIds: string[]): Promise<string>;
+    /**
+     * Get liquidity statistics for a user
+     *
+     * @param user - User to get stats for
+     * @returns Liquidity statistics
+     *
+     * @example
+     * ```typescript
+     * const stats = await loop.liquidity.getLiquidityStats(userPubkey);
+     * console.log(`Total deployed: ${stats.totalDeployed}`);
+     * console.log(`Pending yield: ${stats.pendingYield}`);
+     * ```
+     */
+    getLiquidityStats(user: PublicKey): Promise<LiquidityStats>;
+}
+/**
+ * Energy Capture Module - Monetize distributed energy resources
+ *
+ * Captures value from:
+ * - Solar generation and grid sales
+ * - Battery arbitrage (buy low, sell high)
+ * - EV charging optimization
+ * - Demand response participation
+ */
+declare class EnergyCapture {
+    private readonly loop;
+    constructor(loop: Loop);
+    /**
+     * Register an energy device for value capture
+     *
+     * @param user - Device owner (signer)
+     * @param deviceType - Type of energy device
+     * @param capabilities - Device capabilities
+     * @returns Device registration details
+     *
+     * @example
+     * ```typescript
+     * const device = await loop.energy.registerDevice(
+     *   userPubkey,
+     *   DeviceType.Battery,
+     *   {
+     *     canGenerate: false,
+     *     canStore: true,
+     *     canConsume: true,
+     *     canShiftLoad: true,
+     *     maxPowerWatts: 5000,
+     *     storageCapacityWh: 13500
+     *   }
+     * );
+     * ```
+     */
+    registerDevice(user: PublicKey, deviceType: DeviceType, capabilities: DeviceCapabilities): Promise<DeviceRegistration>;
+    /**
+     * Report energy usage for a device
+     *
+     * @param user - Device owner (signer)
+     * @param deviceId - Device identifier
+     * @param usage - Energy usage data (consumed/generated Wh)
+     * @param gridPrices - Current grid prices for value calculation
+     * @returns Usage report with captured value
+     *
+     * @example
+     * ```typescript
+     * const report = await loop.energy.reportEnergyUsage(
+     *   userPubkey,
+     *   'dev_solar123',
+     *   { generated: new BN(5000), consumed: new BN(1000) },
+     *   { buyPrice: new BN(12), sellPrice: new BN(8) } // cents per kWh
+     * );
+     * ```
+     */
+    reportEnergyUsage(user: PublicKey, deviceId: string, usage: {
+        generated: BN;
+        consumed: BN;
+    }, gridPrices: {
+        buyPrice: BN;
+        sellPrice: BN;
+    }): Promise<UsageReport>;
+    /**
+     * Execute energy arbitrage action
+     *
+     * @param user - Device owner (signer)
+     * @param deviceId - Device to use for arbitrage
+     * @param action - Arbitrage action to take
+     * @returns Execution result with revenue
+     *
+     * @example
+     * ```typescript
+     * // Store energy during low prices
+     * const result = await loop.energy.executeArbitrage(
+     *   userPubkey,
+     *   'dev_battery123',
+     *   ArbitrageAction.Store
+     * );
+     *
+     * // Later, discharge during high prices
+     * const sellResult = await loop.energy.executeArbitrage(
+     *   userPubkey,
+     *   'dev_battery123',
+     *   ArbitrageAction.Discharge
+     * );
+     * ```
+     */
+    executeArbitrage(user: PublicKey, deviceId: string, action: ArbitrageAction): Promise<ArbitrageExecution>;
+    /**
+     * Claim accumulated energy revenue
+     *
+     * @param user - User claiming revenue (signer)
+     * @param periodIds - Reporting periods to claim
+     * @returns Transaction signature
+     *
+     * @example
+     * ```typescript
+     * const sig = await loop.energy.claimEnergyRevenue(
+     *   userPubkey,
+     *   ['period_2026_01', 'period_2026_02']
+     * );
+     * ```
+     */
+    claimEnergyRevenue(user: PublicKey, periodIds: string[]): Promise<string>;
+    /**
+     * Get energy statistics for a user
+     *
+     * @param user - User to get stats for
+     * @returns Energy statistics
+     *
+     * @example
+     * ```typescript
+     * const stats = await loop.energy.getEnergyStats(userPubkey);
+     * console.log(`Devices: ${stats.totalDevices}`);
+     * console.log(`Carbon offset: ${stats.carbonOffsetKg} kg`);
+     * ```
+     */
+    getEnergyStats(user: PublicKey): Promise<EnergyStats>;
+}
+/**
+ * Social Capture Module - Monetize social capital and connections
+ *
+ * Captures value from:
+ * - Professional introductions with deal-based fees
+ * - Reputation staking and vouching
+ * - Network effect monetization
+ */
+declare class SocialCapture {
+    private readonly loop;
+    constructor(loop: Loop);
+    /**
+     * Facilitate an introduction between contacts
+     *
+     * @param user - Facilitator (signer)
+     * @param fromContact - Contact being introduced
+     * @param toContact - Contact being introduced to
+     * @param terms - Terms for the introduction fee
+     * @returns Introduction request details
+     *
+     * @example
+     * ```typescript
+     * const intro = await loop.social.facilitateIntro(
+     *   facilitatorPubkey,
+     *   contactAPubkey,
+     *   contactBPubkey,
+     *   {
+     *     facilitatorFeePercent: 5,
+     *     minimumDealValue: new BN(10000_000000),
+     *     expiryTimestamp: new BN(Date.now() / 1000 + 30 * 24 * 60 * 60),
+     *     description: 'Investment intro'
+     *   }
+     * );
+     * ```
+     */
+    facilitateIntro(user: PublicKey, fromContact: PublicKey, toContact: PublicKey, terms: IntroTerms): Promise<IntroRequest>;
+    /**
+     * Complete an introduction with outcome
+     *
+     * @param user - Facilitator or participant (signer)
+     * @param introId - Introduction to complete
+     * @param outcome - Outcome of the introduction
+     * @returns Completion result with earned fees
+     *
+     * @example
+     * ```typescript
+     * const completion = await loop.social.completeIntro(
+     *   facilitatorPubkey,
+     *   'intro_abc123',
+     *   {
+     *     type: IntroOutcome.DealClosed,
+     *     dealValue: new BN(50000_000000) // 50k deal
+     *   }
+     * );
+     * console.log(`Fee earned: ${completion.feeEarned}`);
+     * ```
+     */
+    completeIntro(user: PublicKey, introId: string, outcome: {
+        type: IntroOutcome;
+        dealValue?: BN;
+    }): Promise<IntroCompletion>;
+    /**
+     * Stake reputation on another user
+     *
+     * @param user - Staker (signer)
+     * @param targetUser - User to vouch for
+     * @param amount - Amount of Cred to stake
+     * @returns Reputation stake details
+     *
+     * @example
+     * ```typescript
+     * const stake = await loop.social.stakeReputation(
+     *   stakerPubkey,
+     *   newUserPubkey,
+     *   new BN(100_000000) // 100 Cred
+     * );
+     * ```
+     */
+    stakeReputation(user: PublicKey, targetUser: PublicKey, amount: BN): Promise<ReputationStake>;
+    /**
+     * Claim accumulated social revenue (intro fees)
+     *
+     * @param user - User claiming revenue (signer)
+     * @returns Transaction signature
+     *
+     * @example
+     * ```typescript
+     * const sig = await loop.social.claimSocialRevenue(userPubkey);
+     * ```
+     */
+    claimSocialRevenue(user: PublicKey): Promise<string>;
+    /**
+     * Get social statistics for a user
+     *
+     * @param user - User to get stats for
+     * @returns Social statistics
+     *
+     * @example
+     * ```typescript
+     * const stats = await loop.social.getSocialStats(userPubkey);
+     * console.log(`Success rate: ${stats.successfulIntros / stats.totalIntros}`);
+     * console.log(`Reputation: ${stats.reputationScore}`);
+     * ```
+     */
+    getSocialStats(user: PublicKey): Promise<SocialStats>;
+}
+/**
+ * Insurance Capture Module - Peer-to-peer DeFi insurance pools
+ *
+ * Captures value from:
+ * - Insurance premium collection
+ * - Claims processing and governance
+ * - Premium returns for no-claim periods
+ */
+declare class InsuranceCapture {
+    private readonly loop;
+    constructor(loop: Loop);
+    /**
+     * Join an insurance pool
+     *
+     * @param user - User joining (signer)
+     * @param poolId - Pool to join
+     * @param coverage - Desired coverage amount
+     * @param premium - Premium to pay
+     * @returns Pool membership details
+     *
+     * @example
+     * ```typescript
+     * const membership = await loop.insurance.joinPool(
+     *   userPubkey,
+     *   'pool_defi_hack',
+     *   new BN(100000_000000), // 100k coverage
+     *   new BN(500_000000) // 500 Cred premium
+     * );
+     * ```
+     */
+    joinPool(user: PublicKey, poolId: string, coverage: BN, premium: BN): Promise<PoolMembership>;
+    /**
+     * File an insurance claim
+     *
+     * @param user - Claimant (signer)
+     * @param poolId - Pool to claim against
+     * @param claimType - Type of claim
+     * @param evidence - Evidence supporting the claim (IPFS/Arweave hash)
+     * @returns Claim submission details
+     *
+     * @example
+     * ```typescript
+     * const claim = await loop.insurance.fileClaim(
+     *   userPubkey,
+     *   'pool_defi_hack',
+     *   ClaimType.SmartContractFailure,
+     *   'QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG'
+     * );
+     * ```
+     */
+    fileClaim(user: PublicKey, poolId: string, claimType: ClaimType, evidence: string): Promise<ClaimSubmission>;
+    /**
+     * Vote on an insurance claim
+     *
+     * @param user - Voter (signer, must be pool member)
+     * @param claimId - Claim to vote on
+     * @param vote - Vote type
+     * @returns Vote result
+     *
+     * @example
+     * ```typescript
+     * const voteResult = await loop.insurance.voteOnClaim(
+     *   userPubkey,
+     *   'claim_xyz789',
+     *   ClaimVoteType.Approve
+     * );
+     * ```
+     */
+    voteOnClaim(user: PublicKey, claimId: string, vote: ClaimVoteType): Promise<ClaimVote>;
+    /**
+     * Claim premium returns for no-claim periods
+     *
+     * @param user - Pool member (signer)
+     * @param poolIds - Pools to claim returns from
+     * @returns Transaction signature
+     *
+     * @example
+     * ```typescript
+     * const sig = await loop.insurance.claimPremiumReturn(
+     *   userPubkey,
+     *   ['pool_defi_hack', 'pool_stablecoin']
+     * );
+     * ```
+     */
+    claimPremiumReturn(user: PublicKey, poolIds: string[]): Promise<string>;
+    /**
+     * Get insurance statistics for a user
+     *
+     * @param user - User to get stats for
+     * @returns Insurance statistics
+     *
+     * @example
+     * ```typescript
+     * const stats = await loop.insurance.getInsuranceStats(userPubkey);
+     * console.log(`Coverage: ${stats.totalCoverage}`);
+     * console.log(`Claims approved: ${stats.claimsApproved}`);
+     * ```
+     */
+    getInsuranceStats(user: PublicKey): Promise<InsuranceStats>;
+}
+
+export { type Ad, type AdPreferences, type AdProfile, type AffiliateStats, type AgentIdentity, type AgentPermission, AgentStatus, AgentType, AnonymizationLevel, ArbitrageAction, type ArbitrageExecution, AttentionCaptureModule, type Attestation, AttestationType, AvpModule, type BehaviorModel, type BondingCurve, CONSTANTS, type CapabilityId, type CaptureAuthority, CaptureType, ClaimStatus, type ClaimSubmission, ClaimType, type ClaimVote, ClaimVoteType, ComputeCaptureModule, type ComputeStats, type ConversionRecord, type CredConfig, CredModule, DataCaptureModule, type DataLicense, type DataLicenseTerms, type DataPricingConfig, type DataStats, type DataType, type DeploymentPosition, type DeviceCapabilities, type DeviceRegistration, DeviceType, EnergyCapture, type EnergyStats, type Escrow, EscrowStatus, type Heir, type InheritanceConfig, type InheritancePlan, InsuranceCapture, type InsuranceStats, type IntroCompletion, IntroOutcome, type IntroRequest, type IntroTerms, type LicenseTerms, LiquidityCapture, type LiquidityStats, LiquidityStrategy, Loop, type LoopConfig, LoopPDA, NetworkCaptureModule, type NetworkStats, type NodeRegistration, NodeType, type OxoConfig, OxoModule, PROGRAM_IDS, PermissionLevel, type PoolMembership, PositionStatus, type RebalanceResult, ReferralCaptureModule, type ReleaseCondition, type ReputationStake, type ReserveStatus, type ResourceProfile, type ResourceSpec, RiskTolerance, SkillCaptureModule, type SkillLicense, type SkillStats, SkillType, SocialCapture, type SocialStats, type StackRecord, type TaskAcceptance, TaskStatus, type TaskSubmission, type TrackedLink, type UsageReport, type Vault, VaultModule, type VeOxoPosition, type ViewVerification, type VoteSubmission, type VtpConfig, VtpModule, type WithdrawalResult, Loop as default };

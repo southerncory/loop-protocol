@@ -981,6 +981,212 @@ export class DataCaptureModule {
   }
 }
 
+// ============================================================================
+// TYPES - Compute Capture
+// ============================================================================
+
+/** Resource profile for compute providers */
+export interface ResourceProfile {
+  provider: PublicKey;
+  cpuCores: number;
+  gpuUnits: number;
+  storageGb: number;
+  bandwidthMbps: number;
+  registeredAt: BN;
+  isAvailable: boolean;
+  tasksCompleted: BN;
+  rewardsEarned: BN;
+  bump: number;
+}
+
+/** Resource specification for registration */
+export interface ResourceSpec {
+  cpu: number;
+  gpu: number;
+  storage: number;
+  bandwidth: number;
+}
+
+/** Task acceptance record */
+export interface TaskAcceptance {
+  taskId: string;
+  provider: PublicKey;
+  bidAmount: BN;
+  acceptedAt: BN;
+  deadline: BN;
+  status: TaskStatus;
+  bump: number;
+}
+
+/** Task status enum */
+export enum TaskStatus {
+  Pending = 0,
+  Completed = 1,
+  Failed = 2,
+  Disputed = 3,
+}
+
+/** Task submission record */
+export interface TaskSubmission {
+  taskId: string;
+  provider: PublicKey;
+  resultHash: Uint8Array;
+  proof: Uint8Array;
+  submittedAt: BN;
+  isVerified: boolean;
+  rewardClaimed: boolean;
+  bump: number;
+}
+
+/** Compute statistics for a provider */
+export interface ComputeStats {
+  totalTasks: BN;
+  totalRewards: BN;
+  successRate: number;
+  avgCompletionTime: BN;
+  reputationScore: number;
+  activeTasks: number;
+}
+
+// ============================================================================
+// TYPES - Network Capture
+// ============================================================================
+
+/** Node registration record */
+export interface NodeRegistration {
+  operator: PublicKey;
+  nodeType: NodeType;
+  capabilities: string[];
+  registeredAt: BN;
+  isActive: boolean;
+  totalUptime: BN;
+  lastSeen: BN;
+  bump: number;
+}
+
+/** Node type enum */
+export enum NodeType {
+  Validator = 0,
+  Relay = 1,
+  Oracle = 2,
+  Storage = 3,
+  Compute = 4,
+}
+
+/** Vote submission record */
+export interface VoteSubmission {
+  voter: PublicKey;
+  proposalId: string;
+  vote: boolean;
+  weight: BN;
+  proof: Uint8Array;
+  votedAt: BN;
+  bump: number;
+}
+
+/** Attestation record */
+export interface Attestation {
+  attester: PublicKey;
+  dataHash: Uint8Array;
+  attestationType: AttestationType;
+  attestedAt: BN;
+  expiresAt: BN | null;
+  isValid: boolean;
+  bump: number;
+}
+
+/** Attestation type enum */
+export enum AttestationType {
+  DataIntegrity = 0,
+  PriceOracle = 1,
+  IdentityVerification = 2,
+  EventWitness = 3,
+}
+
+/** Network statistics for a node */
+export interface NetworkStats {
+  totalVotes: BN;
+  totalAttestations: BN;
+  participationRewards: BN;
+  uptimePercentage: number;
+  currentStreak: number;
+  slashCount: number;
+}
+
+// ============================================================================
+// TYPES - Skill Capture
+// ============================================================================
+
+/** Exported behavior model */
+export interface BehaviorModel {
+  owner: PublicKey;
+  modelId: string;
+  skillType: SkillType;
+  anonymizationLevel: AnonymizationLevel;
+  modelHash: Uint8Array;
+  createdAt: BN;
+  version: number;
+  isLicensable: boolean;
+  minLicensePrice: BN;
+  totalRevenue: BN;
+  bump: number;
+}
+
+/** Skill type enum */
+export enum SkillType {
+  Trading = 0,
+  ContentCreation = 1,
+  DataAnalysis = 2,
+  CustomerService = 3,
+  CodeGeneration = 4,
+  LanguageTranslation = 5,
+  ImageRecognition = 6,
+  Custom = 7,
+}
+
+/** Anonymization level for behavior models */
+export enum AnonymizationLevel {
+  None = 0,
+  Basic = 1,
+  Differential = 2,
+  Federated = 3,
+}
+
+/** Skill license record */
+export interface SkillLicense {
+  licenseId: string;
+  licensor: PublicKey;
+  licensee: PublicKey;
+  modelId: string;
+  termsHash: Uint8Array;
+  pricePaid: BN;
+  startedAt: BN;
+  expiresAt: BN | null;
+  isActive: boolean;
+  usageCount: BN;
+  usageLimit: BN | null;
+  bump: number;
+}
+
+/** License terms */
+export interface LicenseTerms {
+  duration: BN;
+  price: BN;
+  usageLimit: BN;
+  allowSublicense: boolean;
+  commercialUse: boolean;
+}
+
+/** Skill statistics for a user */
+export interface SkillStats {
+  totalModels: BN;
+  totalLicenses: BN;
+  totalRevenue: BN;
+  activeLicenses: number;
+  avgLicensePrice: BN;
+  topSkillType: SkillType;
+}
+
 // SDK CONFIG
 // ============================================================================
 
