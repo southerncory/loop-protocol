@@ -48,13 +48,17 @@ __export(index_exports, {
   NodeType: () => NodeType,
   OxoModule: () => OxoModule,
   PROGRAM_IDS: () => PROGRAM_IDS,
+  ParaIntegration: () => ParaIntegration,
   PermissionLevel: () => PermissionLevel,
   PositionStatus: () => PositionStatus,
+  ReclaimIntegration: () => ReclaimIntegration,
   ReferralCaptureModule: () => ReferralCaptureModule,
   RiskTolerance: () => RiskTolerance,
   SkillCaptureModule: () => SkillCaptureModule,
   SkillType: () => SkillType,
   SocialCapture: () => SocialCapture,
+  SquadsIntegration: () => SquadsIntegration,
+  TEEIntegration: () => TEEIntegration,
   TaskStatus: () => TaskStatus,
   VaultModule: () => VaultModule,
   VtpModule: () => VtpModule,
@@ -3247,6 +3251,128 @@ var InsuranceCapture = class {
     throw new Error("InsuranceCapture.getInsuranceStats not yet implemented");
   }
 };
+var ParaIntegration = class {
+  constructor(connection) {
+    this.connection = connection;
+  }
+  /**
+   * Create a new passkey-protected wallet
+   */
+  async createPasskeyWallet(userId, deviceInfo) {
+    throw new Error("Para integration not yet implemented - requires @para-sdk/solana");
+  }
+  /**
+   * Get a scoped session key for agent operations
+   */
+  async getSessionKey(userId, permissions, expirySeconds) {
+    throw new Error("Para integration not yet implemented - requires @para-sdk/solana");
+  }
+  /**
+   * Sign a transaction using passkey biometrics
+   */
+  async signWithPasskey(userId, transaction) {
+    throw new Error("Para integration not yet implemented - requires @para-sdk/solana");
+  }
+  /**
+   * Revoke an active session key
+   */
+  async revokeSession(userId, sessionKeyId) {
+    throw new Error("Para integration not yet implemented - requires @para-sdk/solana");
+  }
+  /**
+   * List all active sessions for a user
+   */
+  async listActiveSessions(userId) {
+    throw new Error("Para integration not yet implemented - requires @para-sdk/solana");
+  }
+};
+var SquadsIntegration = class {
+  constructor(connection) {
+    this.connection = connection;
+  }
+  /**
+   * Create a Squads smart account with multi-sig
+   */
+  async createSmartAccount(owner, config) {
+    throw new Error("Squads integration not yet implemented - requires @sqds/sdk");
+  }
+  /**
+   * Set spending policy for an agent
+   */
+  async setAgentPolicy(account, agentKey, policy) {
+    throw new Error("Squads integration not yet implemented - requires @sqds/sdk");
+  }
+  /**
+   * Propose a transaction for multi-sig approval
+   */
+  async proposeTransaction(account, transaction) {
+    throw new Error("Squads integration not yet implemented - requires @sqds/sdk");
+  }
+  /**
+   * Approve a pending transaction proposal
+   */
+  async approveTransaction(account, proposalId) {
+    throw new Error("Squads integration not yet implemented - requires @sqds/sdk");
+  }
+  /**
+   * Execute an approved transaction
+   */
+  async executeTransaction(account, proposalId) {
+    throw new Error("Squads integration not yet implemented - requires @sqds/sdk");
+  }
+  /**
+   * Emergency pause an agent's access
+   */
+  async pauseAgent(account, agentKey) {
+    throw new Error("Squads integration not yet implemented - requires @sqds/sdk");
+  }
+};
+var ReclaimIntegration = class {
+  constructor(connection) {
+    this.connection = connection;
+  }
+  /**
+   * Generate a ZK proof of value capture (e.g., purchase on Amazon)
+   */
+  async generateCaptureProof(captureType, sessionData) {
+    throw new Error("Reclaim integration not yet implemented - requires @reclaim/sdk");
+  }
+  /**
+   * Verify a ZK proof and extract claims
+   */
+  async verifyProof(proof, expectedClaims) {
+    throw new Error("Reclaim integration not yet implemented - requires @reclaim/sdk");
+  }
+  /**
+   * Submit a verified capture to mint rewards
+   */
+  async submitVerifiedCapture(user, proof, captureType) {
+    throw new Error("Reclaim integration not yet implemented - requires @reclaim/sdk");
+  }
+};
+var TEEIntegration = class {
+  constructor(connection) {
+    this.connection = connection;
+  }
+  /**
+   * Get attestation document from an enclave
+   */
+  async getEnclaveAttestation(enclaveId) {
+    throw new Error("TEE integration not yet implemented - requires AWS Nitro SDK");
+  }
+  /**
+   * Verify enclave is running expected code
+   */
+  async verifyEnclaveCode(attestation, expectedHash) {
+    throw new Error("TEE integration not yet implemented - requires AWS Nitro SDK");
+  }
+  /**
+   * Register a trusted agent with verified attestation
+   */
+  async registerTrustedAgent(user, attestation) {
+    throw new Error("TEE integration not yet implemented - requires AWS Nitro SDK");
+  }
+};
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   AgentStatus,
@@ -3277,13 +3403,17 @@ var InsuranceCapture = class {
   NodeType,
   OxoModule,
   PROGRAM_IDS,
+  ParaIntegration,
   PermissionLevel,
   PositionStatus,
+  ReclaimIntegration,
   ReferralCaptureModule,
   RiskTolerance,
   SkillCaptureModule,
   SkillType,
   SocialCapture,
+  SquadsIntegration,
+  TEEIntegration,
   TaskStatus,
   VaultModule,
   VtpModule

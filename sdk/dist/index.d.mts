@@ -1,4 +1,4 @@
-import { PublicKey, Connection, TransactionInstruction } from '@solana/web3.js';
+import { PublicKey, Connection, TransactionInstruction, Transaction } from '@solana/web3.js';
 import * as anchor from '@coral-xyz/anchor';
 import { BN } from '@coral-xyz/anchor';
 
@@ -2849,5 +2849,218 @@ declare class InsuranceCapture {
      */
     getInsuranceStats(user: PublicKey): Promise<InsuranceStats>;
 }
+interface DeviceInfo {
+    deviceId: string;
+    deviceType: 'mobile' | 'desktop' | 'hardware';
+    platform: string;
+    biometricCapable: boolean;
+}
+interface PasskeyWallet {
+    userId: string;
+    walletAddress: PublicKey;
+    deviceId: string;
+    createdAt: number;
+    lastUsed: number;
+}
+interface SessionKeyPermissions {
+    canCapture: boolean;
+    canStack: boolean;
+    canTransfer: boolean;
+    maxTransferAmount: number;
+    allowedPrograms: PublicKey[];
+}
+interface SessionKey {
+    keyId: string;
+    publicKey: PublicKey;
+    permissions: SessionKeyPermissions;
+    expiresAt: number;
+    createdAt: number;
+}
+interface SessionInfo {
+    keyId: string;
+    deviceInfo: DeviceInfo;
+    permissions: SessionKeyPermissions;
+    expiresAt: number;
+    lastActivity: number;
+    isActive: boolean;
+}
+interface SignedTransaction {
+    transaction: Transaction;
+    signature: string;
+    signedAt: number;
+}
+interface SmartAccountConfig {
+    threshold: number;
+    members: {
+        pubkey: PublicKey;
+        weight: number;
+    }[];
+    timeLockSeconds: number;
+}
+interface SmartAccount {
+    address: PublicKey;
+    config: SmartAccountConfig;
+    createdAt: number;
+}
+interface AgentPolicy {
+    dailyLimit: number;
+    allowedInstructions: string[];
+    timelock: number;
+    requiresApproval: boolean;
+}
+interface PolicyConfig {
+    account: PublicKey;
+    agentKey: PublicKey;
+    policy: AgentPolicy;
+    setAt: number;
+}
+interface Proposal {
+    proposalId: string;
+    account: PublicKey;
+    transaction: Transaction;
+    proposer: PublicKey;
+    approvals: PublicKey[];
+    status: 'pending' | 'approved' | 'executed' | 'rejected';
+    createdAt: number;
+    expiresAt: number;
+}
+interface ApprovalResult {
+    proposalId: string;
+    approver: PublicKey;
+    newApprovalCount: number;
+    thresholdMet: boolean;
+}
+interface ZKProof {
+    proofId: string;
+    captureType: CaptureType;
+    claims: Record<string, unknown>;
+    proof: string;
+    publicInputs: string[];
+    generatedAt: number;
+}
+interface VerificationResult {
+    valid: boolean;
+    claims: Record<string, unknown>;
+    verifiedAt: number;
+    error?: string;
+}
+interface CaptureResult {
+    captureId: string;
+    user: PublicKey;
+    captureType: CaptureType;
+    amount: number;
+    proof: ZKProof;
+    transactionSignature: string;
+}
+interface EnclaveAttestation {
+    enclaveId: string;
+    codeHash: string;
+    timestamp: number;
+    signature: string;
+    awsAttestationDoc?: string;
+}
+interface AgentRegistration {
+    agentId: string;
+    user: PublicKey;
+    attestation: EnclaveAttestation;
+    capabilities: string[];
+    registeredAt: number;
+}
+/**
+ * Para Integration - Passkey-based seedless authentication
+ */
+declare class ParaIntegration {
+    private connection;
+    constructor(connection: Connection);
+    /**
+     * Create a new passkey-protected wallet
+     */
+    createPasskeyWallet(userId: string, deviceInfo: DeviceInfo): Promise<PasskeyWallet>;
+    /**
+     * Get a scoped session key for agent operations
+     */
+    getSessionKey(userId: string, permissions: SessionKeyPermissions, expirySeconds: number): Promise<SessionKey>;
+    /**
+     * Sign a transaction using passkey biometrics
+     */
+    signWithPasskey(userId: string, transaction: Transaction): Promise<SignedTransaction>;
+    /**
+     * Revoke an active session key
+     */
+    revokeSession(userId: string, sessionKeyId: string): Promise<string>;
+    /**
+     * List all active sessions for a user
+     */
+    listActiveSessions(userId: string): Promise<SessionInfo[]>;
+}
+/**
+ * Squads Integration - Programmable custody and policies
+ */
+declare class SquadsIntegration {
+    private connection;
+    constructor(connection: Connection);
+    /**
+     * Create a Squads smart account with multi-sig
+     */
+    createSmartAccount(owner: PublicKey, config: SmartAccountConfig): Promise<SmartAccount>;
+    /**
+     * Set spending policy for an agent
+     */
+    setAgentPolicy(account: PublicKey, agentKey: PublicKey, policy: AgentPolicy): Promise<PolicyConfig>;
+    /**
+     * Propose a transaction for multi-sig approval
+     */
+    proposeTransaction(account: PublicKey, transaction: Transaction): Promise<Proposal>;
+    /**
+     * Approve a pending transaction proposal
+     */
+    approveTransaction(account: PublicKey, proposalId: string): Promise<ApprovalResult>;
+    /**
+     * Execute an approved transaction
+     */
+    executeTransaction(account: PublicKey, proposalId: string): Promise<string>;
+    /**
+     * Emergency pause an agent's access
+     */
+    pauseAgent(account: PublicKey, agentKey: PublicKey): Promise<string>;
+}
+/**
+ * Reclaim Integration - ZK proofs for trustless capture verification
+ */
+declare class ReclaimIntegration {
+    private connection;
+    constructor(connection: Connection);
+    /**
+     * Generate a ZK proof of value capture (e.g., purchase on Amazon)
+     */
+    generateCaptureProof(captureType: CaptureType, sessionData: Record<string, unknown>): Promise<ZKProof>;
+    /**
+     * Verify a ZK proof and extract claims
+     */
+    verifyProof(proof: ZKProof, expectedClaims: Record<string, unknown>): Promise<VerificationResult>;
+    /**
+     * Submit a verified capture to mint rewards
+     */
+    submitVerifiedCapture(user: PublicKey, proof: ZKProof, captureType: CaptureType): Promise<CaptureResult>;
+}
+/**
+ * TEE Integration - Trusted Execution Environment attestation
+ */
+declare class TEEIntegration {
+    private connection;
+    constructor(connection: Connection);
+    /**
+     * Get attestation document from an enclave
+     */
+    getEnclaveAttestation(enclaveId: string): Promise<EnclaveAttestation>;
+    /**
+     * Verify enclave is running expected code
+     */
+    verifyEnclaveCode(attestation: EnclaveAttestation, expectedHash: string): Promise<VerificationResult>;
+    /**
+     * Register a trusted agent with verified attestation
+     */
+    registerTrustedAgent(user: PublicKey, attestation: EnclaveAttestation): Promise<AgentRegistration>;
+}
 
-export { type Ad, type AdPreferences, type AdProfile, type AffiliateStats, type AgentIdentity, type AgentPermission, AgentStatus, AgentType, AnonymizationLevel, ArbitrageAction, type ArbitrageExecution, AttentionCaptureModule, type Attestation, AttestationType, AvpModule, type BehaviorModel, type BondingCurve, CONSTANTS, type CapabilityId, type CaptureAuthority, CaptureType, ClaimStatus, type ClaimSubmission, ClaimType, type ClaimVote, ClaimVoteType, ComputeCaptureModule, type ComputeStats, type ConversionRecord, type CredConfig, CredModule, DataCaptureModule, type DataLicense, type DataLicenseTerms, type DataPricingConfig, type DataStats, type DataType, type DeploymentPosition, type DeviceCapabilities, type DeviceRegistration, DeviceType, EnergyCapture, type EnergyStats, type Escrow, EscrowStatus, type Heir, type InheritanceConfig, type InheritancePlan, InsuranceCapture, type InsuranceStats, type IntroCompletion, IntroOutcome, type IntroRequest, type IntroTerms, type LicenseTerms, LiquidityCapture, type LiquidityStats, LiquidityStrategy, Loop, type LoopConfig, LoopPDA, NetworkCaptureModule, type NetworkStats, type NodeRegistration, NodeType, type OxoConfig, OxoModule, PROGRAM_IDS, PermissionLevel, type PoolMembership, PositionStatus, type RebalanceResult, ReferralCaptureModule, type ReleaseCondition, type ReputationStake, type ReserveStatus, type ResourceProfile, type ResourceSpec, RiskTolerance, SkillCaptureModule, type SkillLicense, type SkillStats, SkillType, SocialCapture, type SocialStats, type StackRecord, type TaskAcceptance, TaskStatus, type TaskSubmission, type TrackedLink, type UsageReport, type Vault, VaultModule, type VeOxoPosition, type ViewVerification, type VoteSubmission, type VtpConfig, VtpModule, type WithdrawalResult, Loop as default };
+export { type Ad, type AdPreferences, type AdProfile, type AffiliateStats, type AgentIdentity, type AgentPermission, type AgentPolicy, type AgentRegistration, AgentStatus, AgentType, AnonymizationLevel, type ApprovalResult, ArbitrageAction, type ArbitrageExecution, AttentionCaptureModule, type Attestation, AttestationType, AvpModule, type BehaviorModel, type BondingCurve, CONSTANTS, type CapabilityId, type CaptureAuthority, type CaptureResult, CaptureType, ClaimStatus, type ClaimSubmission, ClaimType, type ClaimVote, ClaimVoteType, ComputeCaptureModule, type ComputeStats, type ConversionRecord, type CredConfig, CredModule, DataCaptureModule, type DataLicense, type DataLicenseTerms, type DataPricingConfig, type DataStats, type DataType, type DeploymentPosition, type DeviceCapabilities, type DeviceInfo, type DeviceRegistration, DeviceType, type EnclaveAttestation, EnergyCapture, type EnergyStats, type Escrow, EscrowStatus, type Heir, type InheritanceConfig, type InheritancePlan, InsuranceCapture, type InsuranceStats, type IntroCompletion, IntroOutcome, type IntroRequest, type IntroTerms, type LicenseTerms, LiquidityCapture, type LiquidityStats, LiquidityStrategy, Loop, type LoopConfig, LoopPDA, NetworkCaptureModule, type NetworkStats, type NodeRegistration, NodeType, type OxoConfig, OxoModule, PROGRAM_IDS, ParaIntegration, type PasskeyWallet, PermissionLevel, type PolicyConfig, type PoolMembership, PositionStatus, type Proposal, type RebalanceResult, ReclaimIntegration, ReferralCaptureModule, type ReleaseCondition, type ReputationStake, type ReserveStatus, type ResourceProfile, type ResourceSpec, RiskTolerance, type SessionInfo, type SessionKey, type SessionKeyPermissions, type SignedTransaction, SkillCaptureModule, type SkillLicense, type SkillStats, SkillType, type SmartAccount, type SmartAccountConfig, SocialCapture, type SocialStats, SquadsIntegration, type StackRecord, TEEIntegration, type TaskAcceptance, TaskStatus, type TaskSubmission, type TrackedLink, type UsageReport, type Vault, VaultModule, type VeOxoPosition, type VerificationResult, type ViewVerification, type VoteSubmission, type VtpConfig, VtpModule, type WithdrawalResult, type ZKProof, Loop as default };

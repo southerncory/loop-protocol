@@ -5059,3 +5059,289 @@ export class InsuranceCapture {
     throw new Error('InsuranceCapture.getInsuranceStats not yet implemented');
   }
 }
+
+// ============================================================================
+// SECURITY INTEGRATIONS
+// ============================================================================
+
+// Para Integration Types (Passkeys)
+export interface DeviceInfo {
+  deviceId: string;
+  deviceType: 'mobile' | 'desktop' | 'hardware';
+  platform: string;
+  biometricCapable: boolean;
+}
+
+export interface PasskeyWallet {
+  userId: string;
+  walletAddress: PublicKey;
+  deviceId: string;
+  createdAt: number;
+  lastUsed: number;
+}
+
+export interface SessionKeyPermissions {
+  canCapture: boolean;
+  canStack: boolean;
+  canTransfer: boolean;
+  maxTransferAmount: number;
+  allowedPrograms: PublicKey[];
+}
+
+export interface SessionKey {
+  keyId: string;
+  publicKey: PublicKey;
+  permissions: SessionKeyPermissions;
+  expiresAt: number;
+  createdAt: number;
+}
+
+export interface SessionInfo {
+  keyId: string;
+  deviceInfo: DeviceInfo;
+  permissions: SessionKeyPermissions;
+  expiresAt: number;
+  lastActivity: number;
+  isActive: boolean;
+}
+
+export interface SignedTransaction {
+  transaction: Transaction;
+  signature: string;
+  signedAt: number;
+}
+
+// Squads Integration Types (Policies)
+export interface SmartAccountConfig {
+  threshold: number;
+  members: { pubkey: PublicKey; weight: number }[];
+  timeLockSeconds: number;
+}
+
+export interface SmartAccount {
+  address: PublicKey;
+  config: SmartAccountConfig;
+  createdAt: number;
+}
+
+export interface AgentPolicy {
+  dailyLimit: number;
+  allowedInstructions: string[];
+  timelock: number;
+  requiresApproval: boolean;
+}
+
+export interface PolicyConfig {
+  account: PublicKey;
+  agentKey: PublicKey;
+  policy: AgentPolicy;
+  setAt: number;
+}
+
+export interface Proposal {
+  proposalId: string;
+  account: PublicKey;
+  transaction: Transaction;
+  proposer: PublicKey;
+  approvals: PublicKey[];
+  status: 'pending' | 'approved' | 'executed' | 'rejected';
+  createdAt: number;
+  expiresAt: number;
+}
+
+export interface ApprovalResult {
+  proposalId: string;
+  approver: PublicKey;
+  newApprovalCount: number;
+  thresholdMet: boolean;
+}
+
+// Reclaim Integration Types (ZK Proofs)
+export interface ZKProof {
+  proofId: string;
+  captureType: CaptureType;
+  claims: Record<string, unknown>;
+  proof: string;
+  publicInputs: string[];
+  generatedAt: number;
+}
+
+export interface VerificationResult {
+  valid: boolean;
+  claims: Record<string, unknown>;
+  verifiedAt: number;
+  error?: string;
+}
+
+export interface CaptureResult {
+  captureId: string;
+  user: PublicKey;
+  captureType: CaptureType;
+  amount: number;
+  proof: ZKProof;
+  transactionSignature: string;
+}
+
+// TEE Integration Types
+export interface EnclaveAttestation {
+  enclaveId: string;
+  codeHash: string;
+  timestamp: number;
+  signature: string;
+  awsAttestationDoc?: string;
+}
+
+export interface AgentRegistration {
+  agentId: string;
+  user: PublicKey;
+  attestation: EnclaveAttestation;
+  capabilities: string[];
+  registeredAt: number;
+}
+
+/**
+ * Para Integration - Passkey-based seedless authentication
+ */
+export class ParaIntegration {
+  constructor(private connection: Connection) {}
+
+  /**
+   * Create a new passkey-protected wallet
+   */
+  async createPasskeyWallet(userId: string, deviceInfo: DeviceInfo): Promise<PasskeyWallet> {
+    throw new Error('Para integration not yet implemented - requires @para-sdk/solana');
+  }
+
+  /**
+   * Get a scoped session key for agent operations
+   */
+  async getSessionKey(userId: string, permissions: SessionKeyPermissions, expirySeconds: number): Promise<SessionKey> {
+    throw new Error('Para integration not yet implemented - requires @para-sdk/solana');
+  }
+
+  /**
+   * Sign a transaction using passkey biometrics
+   */
+  async signWithPasskey(userId: string, transaction: Transaction): Promise<SignedTransaction> {
+    throw new Error('Para integration not yet implemented - requires @para-sdk/solana');
+  }
+
+  /**
+   * Revoke an active session key
+   */
+  async revokeSession(userId: string, sessionKeyId: string): Promise<string> {
+    throw new Error('Para integration not yet implemented - requires @para-sdk/solana');
+  }
+
+  /**
+   * List all active sessions for a user
+   */
+  async listActiveSessions(userId: string): Promise<SessionInfo[]> {
+    throw new Error('Para integration not yet implemented - requires @para-sdk/solana');
+  }
+}
+
+/**
+ * Squads Integration - Programmable custody and policies
+ */
+export class SquadsIntegration {
+  constructor(private connection: Connection) {}
+
+  /**
+   * Create a Squads smart account with multi-sig
+   */
+  async createSmartAccount(owner: PublicKey, config: SmartAccountConfig): Promise<SmartAccount> {
+    throw new Error('Squads integration not yet implemented - requires @sqds/sdk');
+  }
+
+  /**
+   * Set spending policy for an agent
+   */
+  async setAgentPolicy(account: PublicKey, agentKey: PublicKey, policy: AgentPolicy): Promise<PolicyConfig> {
+    throw new Error('Squads integration not yet implemented - requires @sqds/sdk');
+  }
+
+  /**
+   * Propose a transaction for multi-sig approval
+   */
+  async proposeTransaction(account: PublicKey, transaction: Transaction): Promise<Proposal> {
+    throw new Error('Squads integration not yet implemented - requires @sqds/sdk');
+  }
+
+  /**
+   * Approve a pending transaction proposal
+   */
+  async approveTransaction(account: PublicKey, proposalId: string): Promise<ApprovalResult> {
+    throw new Error('Squads integration not yet implemented - requires @sqds/sdk');
+  }
+
+  /**
+   * Execute an approved transaction
+   */
+  async executeTransaction(account: PublicKey, proposalId: string): Promise<string> {
+    throw new Error('Squads integration not yet implemented - requires @sqds/sdk');
+  }
+
+  /**
+   * Emergency pause an agent's access
+   */
+  async pauseAgent(account: PublicKey, agentKey: PublicKey): Promise<string> {
+    throw new Error('Squads integration not yet implemented - requires @sqds/sdk');
+  }
+}
+
+/**
+ * Reclaim Integration - ZK proofs for trustless capture verification
+ */
+export class ReclaimIntegration {
+  constructor(private connection: Connection) {}
+
+  /**
+   * Generate a ZK proof of value capture (e.g., purchase on Amazon)
+   */
+  async generateCaptureProof(captureType: CaptureType, sessionData: Record<string, unknown>): Promise<ZKProof> {
+    throw new Error('Reclaim integration not yet implemented - requires @reclaim/sdk');
+  }
+
+  /**
+   * Verify a ZK proof and extract claims
+   */
+  async verifyProof(proof: ZKProof, expectedClaims: Record<string, unknown>): Promise<VerificationResult> {
+    throw new Error('Reclaim integration not yet implemented - requires @reclaim/sdk');
+  }
+
+  /**
+   * Submit a verified capture to mint rewards
+   */
+  async submitVerifiedCapture(user: PublicKey, proof: ZKProof, captureType: CaptureType): Promise<CaptureResult> {
+    throw new Error('Reclaim integration not yet implemented - requires @reclaim/sdk');
+  }
+}
+
+/**
+ * TEE Integration - Trusted Execution Environment attestation
+ */
+export class TEEIntegration {
+  constructor(private connection: Connection) {}
+
+  /**
+   * Get attestation document from an enclave
+   */
+  async getEnclaveAttestation(enclaveId: string): Promise<EnclaveAttestation> {
+    throw new Error('TEE integration not yet implemented - requires AWS Nitro SDK');
+  }
+
+  /**
+   * Verify enclave is running expected code
+   */
+  async verifyEnclaveCode(attestation: EnclaveAttestation, expectedHash: string): Promise<VerificationResult> {
+    throw new Error('TEE integration not yet implemented - requires AWS Nitro SDK');
+  }
+
+  /**
+   * Register a trusted agent with verified attestation
+   */
+  async registerTrustedAgent(user: PublicKey, attestation: EnclaveAttestation): Promise<AgentRegistration> {
+    throw new Error('TEE integration not yet implemented - requires AWS Nitro SDK');
+  }
+}
