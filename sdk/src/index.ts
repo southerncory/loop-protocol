@@ -45,91 +45,9 @@ import {
 import * as anchor from '@coral-xyz/anchor';
 import { BN } from '@coral-xyz/anchor';
 import { ParaModule, SquadsModule, ReclaimModule, TeeModule } from './security';
+import { PROGRAM_IDS, CONSTANTS, CaptureType, PermissionLevel, EscrowStatus, AgentType, AgentStatus } from './constants';
+import { LoopPDA } from './pda';
 
-// ============================================================================
-// PROGRAM IDS
-// ============================================================================
-
-export const PROGRAM_IDS = {
-  VAULT: new PublicKey('76FgGQNTw9maaV82og6U33KMZw4FCw9yGJu4M75hJ3Z7'),
-  CRED: new PublicKey('FHVp7WrnUZq69aNZgYw2YNmitSdj8UCwoJ8C2A1M98JA'),
-  OXO: new PublicKey('3qxTuF17rTdGFECPimRWu51uUycSwAL4ebd7w9s2xx4z'),
-  VTP: new PublicKey('4D2PnJ4txLTQAqcoURt5eUQHMM85QsGPdGBHdsineuWj'),
-  AVP: new PublicKey('H5c9xfPYcx6EtC8hpThshARtUR7tq1NfMJVrTx8z9Jcx'),
-} as const;
-
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
-export const CONSTANTS = {
-  // Vault
-  EXTRACTION_FEE_BPS: 500, // 5%
-  
-  // OXO
-  OXO_TOTAL_SUPPLY: 1_000_000_000_000_000, // 1B with 6 decimals
-  MIN_LOCK_SECONDS: 15_552_000, // 6 months
-  MAX_LOCK_SECONDS: 126_144_000, // 4 years
-  GRADUATION_THRESHOLD: 25_000_000_000, // 25,000 OXO
-  AGENT_CREATION_FEE: 500_000_000, // 500 OXO
-  
-  // VTP
-  TRANSFER_FEE_BPS: 10, // 0.1%
-  ESCROW_FEE_BPS: 25, // 0.25%
-  MAX_ARBITERS: 5,
-  MAX_CONDITIONS: 10,
-  
-  // AVP
-  MIN_SERVICE_AGENT_STAKE: 500_000_000, // 500 OXO
-  MAX_CAPABILITIES: 20,
-  MAX_METADATA_LEN: 200,
-} as const;
-
-// ============================================================================
-// ENUMS (matching Rust)
-// ============================================================================
-
-/** Type of value capture */
-export enum CaptureType {
-  Shopping = 0,
-  Data = 1,
-  Presence = 2,
-  Attention = 3,
-  Referral = 4,
-}
-
-/** Agent permission levels for vault access */
-export enum PermissionLevel {
-  None = 0,
-  Read = 1,
-  Capture = 2,
-  Guided = 3,
-  Autonomous = 4,
-}
-
-/** Escrow status */
-export enum EscrowStatus {
-  Active = 0,
-  Released = 1,
-  Cancelled = 2,
-  Disputed = 3,
-}
-
-/** Agent type */
-export enum AgentType {
-  Personal = 0,
-  Service = 1,
-}
-
-/** Agent status */
-export enum AgentStatus {
-  Active = 0,
-  Suspended = 1,
-  Revoked = 2,
-}
-
-// ============================================================================
-// TYPES - Vault
 // ============================================================================
 
 /** On-chain Vault account data */
@@ -1195,153 +1113,6 @@ export interface LoopConfig {
   connection: Connection;
   wallet?: anchor.Wallet;
 }
-
-// ============================================================================
-// PDA DERIVATION HELPERS
-// ============================================================================
-
-/**
- * Derive PDA addresses for all Loop Protocol accounts
- */
-export class LoopPDA {
-  // ─────────────────────────────────────────────────────────────────────────
-  // Vault PDAs
-  // ─────────────────────────────────────────────────────────────────────────
-
-  /** Derive vault PDA for an owner */
-  static vault(owner: PublicKey): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-      [Buffer.from('vault'), owner.toBuffer()],
-      PROGRAM_IDS.VAULT
-    );
-  }
-
-  /** Derive stack record PDA */
-  static stackRecord(vault: PublicKey, stackIndex: BN): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-      [Buffer.from('stack'), vault.toBuffer(), stackIndex.toArrayLike(Buffer, 'le', 8)],
-      PROGRAM_IDS.VAULT
-    );
-  }
-
-  /** Derive agent permission PDA */
-  static agentPermission(vault: PublicKey, agent: PublicKey): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-      [Buffer.from('agent_perm'), vault.toBuffer(), agent.toBuffer()],
-      PROGRAM_IDS.VAULT
-    );
-  }
-
-  /** Derive vault inheritance config PDA */
-  static vaultInheritance(vault: PublicKey): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-      [Buffer.from('inheritance'), vault.toBuffer()],
-      PROGRAM_IDS.VAULT
-    );
-  }
-
-  /** Derive capture authority PDA */
-  static captureAuthority(): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-      [Buffer.from('capture_authority')],
-      PROGRAM_IDS.VAULT
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Cred PDAs
-  // ─────────────────────────────────────────────────────────────────────────
-
-  /** Derive cred config PDA */
-  static credConfig(): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-      [Buffer.from('cred_config')],
-      PROGRAM_IDS.CRED
-    );
-  }
-
-  /** Derive capture auth PDA for a module */
-  static captureAuth(moduleAddress: PublicKey): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-      [Buffer.from('capture_auth'), moduleAddress.toBuffer()],
-      PROGRAM_IDS.CRED
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // OXO PDAs
-  // ─────────────────────────────────────────────────────────────────────────
-
-  /** Derive OXO config PDA */
-  static oxoConfig(): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-      [Buffer.from('config')],
-      PROGRAM_IDS.OXO
-    );
-  }
-
-  /** Derive veOXO position PDA */
-  static veOxoPosition(owner: PublicKey): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-      [Buffer.from('ve_position'), owner.toBuffer()],
-      PROGRAM_IDS.OXO
-    );
-  }
-
-  /** Derive bonding curve PDA for agent token */
-  static bondingCurve(agentMint: PublicKey): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-      [Buffer.from('bonding_curve'), agentMint.toBuffer()],
-      PROGRAM_IDS.OXO
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // VTP PDAs
-  // ─────────────────────────────────────────────────────────────────────────
-
-  /** Derive VTP config PDA */
-  static vtpConfig(): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-      [Buffer.from('vtp_config')],
-      PROGRAM_IDS.VTP
-    );
-  }
-
-  /** Derive escrow PDA */
-  static escrow(sender: PublicKey, recipient: PublicKey, createdAt: BN): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-      [
-        Buffer.from('escrow'),
-        sender.toBuffer(),
-        recipient.toBuffer(),
-        createdAt.toArrayLike(Buffer, 'le', 8),
-      ],
-      PROGRAM_IDS.VTP
-    );
-  }
-
-  /** Derive VTP inheritance plan PDA */
-  static vtpInheritance(owner: PublicKey): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-      [Buffer.from('inheritance'), owner.toBuffer()],
-      PROGRAM_IDS.VTP
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // AVP PDAs
-  // ─────────────────────────────────────────────────────────────────────────
-
-  /** Derive agent identity PDA */
-  static agentIdentity(agent: PublicKey): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-      [Buffer.from('agent'), agent.toBuffer()],
-      PROGRAM_IDS.AVP
-    );
-  }
-}
-
 // ============================================================================
 // MAIN LOOP CLASS
 // ============================================================================
@@ -5368,3 +5139,8 @@ export * from './errors';
 
 // Utilities
 export * from "./utils";
+
+
+// Constants and PDA helpers
+export * from './constants';
+export { LoopPDA } from './pda';
